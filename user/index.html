@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,53 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../css/common.css" rel="stylesheet">
     <link href="../css/user.css" rel="stylesheet">
+    <style>
+        .book-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+            cursor: pointer;
+            max-width: 200px;
+            margin: 0 auto;
+            min-height: 400px; /* Đảm bảo chiều cao đồng đều */
+            display: flex;
+            flex-direction: column;
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .book-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: contain; /* Giữ tỷ lệ gốc, không kéo dãn */
+        }
+        .book-card .card-body {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .book-detail {
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .book-detail img {
+            max-width: 300px; /* Tăng chiều ngang cho hình ảnh */
+            margin-right: 30px;
+            border-radius: 5px;
+            object-fit: contain; /* Giữ tỷ lệ tự nhiên */
+        }
+        .detail-section {
+            margin-bottom: 15px;
+        }
+        .modal-xl {
+            max-width: 900px; /* Mở rộng chiều ngang của modal */
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -18,7 +65,7 @@
             </a>
             
             <div class="d-flex align-items-center">
-                <input type="search" class="form-control me-2" placeholder="Tìm sách..." id="searchInput">
+                <input type="search" class="form-control me-2" placeholder="Search books..." id="searchInput">
                 
                 <a href="/user/cart.html" class="btn btn-outline-primary position-relative me-3">
                     <i class="bi bi-cart"></i>
@@ -28,7 +75,7 @@
                 <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
                 <div class="dropdown">
                     <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <span id="userName">User</span>
+                        <span id="userName">Test Admin</span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="/user/profile.html">Profile</a></li>
@@ -42,20 +89,20 @@
 
     <!-- Main Content -->
     <div class="container mt-4">
-        <h2>Danh sách sách</h2>
+        <h2>Book List</h2>
         
         <div class="row mb-3">
             <div class="col">
                 <select class="form-select" id="sortBy">
-                    <option value="newest">Mới nhất</option>
-                    <option value="price-low">Giá thấp đến cao</option>
-                    <option value="price-high">Giá cao đến thấp</option>
-                    <option value="rating">Đánh giá cao</option>
+                    <option value="newest">Newest</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="rating">Rating: High to Low</option>
                 </select>
             </div>
         </div>
 
-        <div id="booksContainer" class="row">
+        <div id="booksContainer" class="row row-cols-1 row-cols-md-5 g-4">
             <!-- Books will be loaded here -->
         </div>
 
@@ -65,50 +112,305 @@
     </div>
 
     <!-- Book Detail Modal -->
-    <div class="modal fade" id="bookModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="bookModal" tabindex="-1" aria-labelledby="bookModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl"> <!-- Tăng kích thước modal -->
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Chi tiết sách</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="modalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="modalBody">
+                <div class="modal-body book-detail" id="modalBody">
                     <!-- Book details will be loaded here -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="addToCartBtn">
-                        <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                        <i class="bi bi-cart-plus"></i> Add to Cart
                     </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/common.js"></script>
-    <script src="../js/user.js"></script>
-    <script>
-            if (!localStorage.getItem('authToken')) {
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Đảm bảo Chart.js được tải -->
+<script src="../js/common.js"></script>
+<script src="../js/user.js"></script>
+<script>
+    if (!localStorage.getItem('authToken')) {
         localStorage.setItem('authToken', 'fake-token-for-testing');
         localStorage.setItem('currentUser', JSON.stringify({
             id: 1,
             email: 'admin@test.com',
             fullName: 'Test Admin',
-            role: 'Admin', // Đổi thành 'Customer' nếu test User
+            role: 'Admin',
             avatarUrl: 'https://via.placeholder.com/40'
         }));
     }
-        // Check auth
-        checkAuth();
-        updateUserInfo();
+
+    checkAuth();
+    updateUserInfo();
+    loadUserBooks(1); // Bắt đầu từ trang 1
+    updateCartCount();
+
+    document.getElementById('searchInput').addEventListener('input', debounce(searchBooks, 300));
+
+    // Override displayUserBooks to match the new layout, no Add to Cart button
+    function displayUserBooks(result) {
+        const container = document.getElementById('booksContainer');
+        const books = result.Data || [];
         
-        // Load books
-        loadUserBooks();
-        updateCartCount();
-        
-        // Search
-        document.getElementById('searchInput').addEventListener('input', debounce(searchBooks, 300));
-    </script>
+        container.innerHTML = books.map(book => `
+            <div class="col">
+                <div class="book-card" onclick="showBookDetail(${book.Id})">
+                    <img src="${book.CoverImg || 'https://via.placeholder.com/200x300'}" alt="${book.Title}">
+                    <div class="card-body p-2">
+                        <h6 class="card-title">${book.Title}</h6>
+                        <p class="card-text text-muted">by ${book.Author}</p>
+                        <p class="card-text text-success">${formatPrice(book.Price)}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        console.log('Loaded books:', books); // Debug log for book IDs
+
+        // Update pagination
+        updatePagination(result.Page, result.TotalPages);
+    }
+
+    // Update pagination with First, Last, Previous, and Next buttons
+    function updatePagination(currentPage, totalPages) {
+        const pagination = document.getElementById('pagination');
+        let html = '<ul class="pagination justify-content-center">';
+
+        // First button
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadUserBooks(1); return false;">First</a>
+        </li>`;
+
+        // Previous button
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadUserBooks(${currentPage - 1}); return false;">Previous</a>
+        </li>`;
+
+        // Dynamic page range (show 5 pages around current page)
+        const pageRange = 2; // Số trang hiển thị trước và sau trang hiện tại
+        let startPage = Math.max(1, currentPage - pageRange);
+        let endPage = Math.min(totalPages, currentPage + pageRange);
+
+        if (endPage - startPage < 4) { // Đảm bảo ít nhất 5 trang
+            if (startPage === 1) endPage = Math.min(5, totalPages);
+            else if (endPage === totalPages) startPage = Math.max(1, totalPages - 4);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="loadUserBooks(${i}); return false;">${i}</a>
+            </li>`;
+        }
+
+        // Next button
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadUserBooks(${currentPage + 1}); return false;">Next</a>
+        </li>`;
+
+        // Last button
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadUserBooks(${totalPages}); return false;">Last</a>
+        </li>`;
+
+        html += '</ul>';
+        pagination.innerHTML = html;
+
+        // Log for debugging
+        console.log(`Pagination: Current=${currentPage}, Total=${totalPages}, Range=${startPage}-${endPage}`);
+    }
+
+    // Ensure all functions are accessible
+    window.showBookDetail = showBookDetail;
+    window.quickAddToCart = quickAddToCart;
+    window.updateCartCount = updateCartCount;
+    window.searchBooks = searchBooks;
+
+    // Override showBookDetail with detailed layout and bar chart for ratings
+    window.showBookDetail = async function(bookId) {
+        currentBookId = bookId;
+        const modal = new bootstrap.Modal(document.getElementById('bookModal'));
+        console.log('Fetching details for bookId:', bookId); // Debug log
+
+        try {
+            const book = await apiCall(`/BookApi/${bookId}/details`);
+            console.log('Book details from API:', book); // Debug log
+            if (!book) throw new Error('Book not found');
+
+            // Clean Genres by removing [] and ""
+            let cleanGenres = book.Genres || 'Not specified';
+            if (cleanGenres.startsWith('[') && cleanGenres.endsWith(']')) {
+                cleanGenres = cleanGenres.slice(1, -1); // Remove []
+            }
+            cleanGenres = cleanGenres.replace(/"/g, ''); // Remove ""
+
+            // Parse RatingsByStars or fallback to estimated distribution
+            let ratingData = { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 };
+            if (book.RatingsByStars) {
+                try {
+                    const ratings = JSON.parse(book.RatingsByStars);
+                    ratingData = {
+                        "5": ratings["5"] || 0,
+                        "4": ratings["4"] || 0,
+                        "3": ratings["3"] || 0,
+                        "2": ratings["2"] || 0,
+                        "1": ratings["1"] || 0
+                    };
+                } catch (e) {
+                    console.warn('Invalid RatingsByStars format, using fallback:', e);
+                    const total = book.NumRatings || 0;
+                    const avgRating = book.Rating || 0;
+                    ratingData = {
+                        "5": Math.round(total * (avgRating >= 5 ? 1 : avgRating / 5)),
+                        "4": Math.round(total * (avgRating >= 4 ? 0.2 : 0)),
+                        "3": Math.round(total * (avgRating >= 3 ? 0.2 : 0)),
+                        "2": Math.round(total * (avgRating >= 2 ? 0.1 : 0)),
+                        "1": Math.round(total * (avgRating >= 1 ? 0.1 : 0))
+                    };
+                }
+            } else if (book.NumRatings && book.Rating) {
+                const total = book.NumRatings;
+                const avgRating = book.Rating;
+                ratingData = {
+                    "5": Math.round(total * (avgRating >= 5 ? 1 : avgRating / 5)),
+                    "4": Math.round(total * (avgRating >= 4 ? 0.2 : 0)),
+                    "3": Math.round(total * (avgRating >= 3 ? 0.2 : 0)),
+                    "2": Math.round(total * (avgRating >= 2 ? 0.1 : 0)),
+                    "1": Math.round(total * (avgRating >= 1 ? 0.1 : 0))
+                };
+            }
+
+            // Render modal content
+            document.getElementById('modalBody').innerHTML = `
+                <div class="d-flex">
+                    <img src="${book.CoverImg || 'https://via.placeholder.com/300'}" alt="${book.Title}" class="me-3">
+                    <div>
+                        <h4 class="mb-2">${book.Title || 'Untitled'}</h4>
+                        <p class="text-muted mb-2">by ${book.Author || 'Unknown Author'}</p>
+                        <p class="text-success fw-bold mb-3">Price: $${book.Price?.toFixed(2) || '0.00'}</p>
+                        <div class="detail-section">
+                            <strong>Description:</strong>
+                            <p class="mb-2">${book.Description || 'No description available'}</p>
+                        </div>
+                        <div class="detail-section">
+                            <strong>Genres:</strong>
+                            <p>${cleanGenres}</p>
+                        </div>
+                        <div class="detail-section">
+                            <strong>Rating:</strong>
+                            <div style="width: 300px; height: 200px;">
+                                <canvas id="ratingChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <strong>Pages:</strong>
+                            <p>${book.Pages || 'Not specified'}</p>
+                        </div>
+                        <div class="detail-section">
+                            <strong>Language:</strong>
+                            <p>${book.Language || 'Not specified'}</p>
+                        </div>
+                        <div class="detail-section">
+                            <strong>Series:</strong>
+                            <p>${book.Series || 'Not part of a series'}</p>
+                        </div>
+                        <button class="btn btn-primary mt-3" onclick="quickAddToCart(${book.Id})">
+                            <i class="bi bi-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Create bar chart only if canvas exists
+            const ctx = document.getElementById('ratingChart')?.getContext('2d');
+            if (ctx) {
+                try {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star'],
+                            datasets: [{
+                                label: 'Number of Ratings',
+                                data: [ratingData["5"], ratingData["4"], ratingData["3"], ratingData["2"], ratingData["1"]],
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Number of Ratings'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                    console.log('Chart created successfully');
+                } catch (chartError) {
+                    console.error('Error creating chart:', chartError);
+                    document.getElementById('modalBody').innerHTML += '<p>Error: Unable to display rating chart.</p>';
+                }
+            } else {
+                console.error('Canvas element not found for rating chart');
+                document.getElementById('modalBody').innerHTML += '<p>Error: Unable to display rating chart.</p>';
+            }
+
+            modal.show();
+        } catch (error) {
+            console.error('Error fetching book details:', error);
+            showAlert('Error loading book details: ' + error.message, 'danger');
+            document.getElementById('modalBody').innerHTML = '<p>Unable to load book details.</p>';
+        }
+    };
+
+    // Override loadUserBooks to handle pagination
+    window.loadUserBooks = async function(page = 1) {
+        showLoading('booksContainer');
+        try {
+            const result = await apiCall(`/BookApi/paged?page=${page}&pageSize=12`);
+            displayUserBooks(result);
+        } catch (error) {
+            showAlert('Error loading books: ' + error.message, 'danger');
+        }
+    };
+
+    // Override quickAddToCart with debug
+    window.quickAddToCart = async function(bookId) {
+        try {
+            console.log('Adding to cart, BookId:', bookId); // Debug log
+            const result = await apiCall('/cart/add', {
+                method: 'POST',
+                body: JSON.stringify({ BookId: bookId, Quantity: 1 })
+            });
+            console.log('API response for cart add:', result); // Debug response
+            if (result.Success || result.message === 'Book added to cart successfully') {
+                showAlert('Added to cart successfully!', 'success');
+                updateCartCount();
+            } else {
+                throw new Error(result.message || 'Failed to add to cart');
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            showAlert('Error adding to cart: ' + error.message, 'danger');
+        }
+    };
+</script>
 </body>
 </html>
