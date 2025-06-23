@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookStore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet">
+    <link href="../css/user.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/user/index.html">
+                <i class="bi bi-book"></i> BookStore
+            </a>
+            
+            <div class="d-flex align-items-center">
+                <input type="search" class="form-control me-2" placeholder="Tìm sách..." id="searchInput">
+                
+                <a href="/user/cart.html" class="btn btn-outline-primary position-relative me-3">
+                    <i class="bi bi-cart"></i>
+                    <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" id="cartCount">0</span>
+                </a>
+                
+                <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <span id="userName">User</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/user/profile.html">Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <h2>Danh sách sách</h2>
+        
+        <div class="row mb-3">
+            <div class="col">
+                <select class="form-select" id="sortBy">
+                    <option value="newest">Mới nhất</option>
+                    <option value="price-low">Giá thấp đến cao</option>
+                    <option value="price-high">Giá cao đến thấp</option>
+                    <option value="rating">Đánh giá cao</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="booksContainer" class="row">
+            <!-- Books will be loaded here -->
+        </div>
+
+        <nav id="pagination" class="mt-4">
+            <!-- Pagination will be loaded here -->
+        </nav>
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div class="modal fade" id="bookModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Chi tiết sách</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Book details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="addToCartBtn">
+                        <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/user.js"></script>
+    <script>
+            if (!localStorage.getItem('authToken')) {
+        localStorage.setItem('authToken', 'fake-token-for-testing');
+        localStorage.setItem('currentUser', JSON.stringify({
+            id: 1,
+            email: 'admin@test.com',
+            fullName: 'Test Admin',
+            role: 'Admin', // Đổi thành 'Customer' nếu test User
+            avatarUrl: 'https://via.placeholder.com/40'
+        }));
+    }
+        // Check auth
+        checkAuth();
+        updateUserInfo();
+        
+        // Load books
+        loadUserBooks();
+        updateCartCount();
+        
+        // Search
+        document.getElementById('searchInput').addEventListener('input', debounce(searchBooks, 300));
+    </script>
+</body>
+</html>
