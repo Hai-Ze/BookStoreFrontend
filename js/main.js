@@ -41,6 +41,44 @@ const smartCache = {
         }
         
         return entry.value;
+    },
+    
+    clear() {
+        this.data.clear();
+    }
+};
+
+// BOOK DETAILS CACHE
+const bookDetailsCache = {
+    data: new Map(),
+    maxAge: 300000, // 5 phút
+    maxSize: 100,
+    
+    set(key, value) {
+        if (this.data.size >= this.maxSize) {
+            const firstKey = this.data.keys().next().value;
+            this.data.delete(firstKey);
+        }
+        this.data.set(key, {
+            value,
+            timestamp: Date.now()
+        });
+    },
+    
+    get(key) {
+        const entry = this.data.get(key);
+        if (!entry) return null;
+        
+        if (Date.now() - entry.timestamp > this.maxAge) {
+            this.data.delete(key);
+            return null;
+        }
+        
+        return entry.value;
+    },
+    
+    clear() {
+        this.data.clear();
     }
 };
 
@@ -66,6 +104,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('pageSizeSelect').value = '20';
     setupEventListeners();
     showAllBooks();
+    setTimeout(() => {
+        const loginSection = document.getElementById('loginSection');
+        const userSection = document.getElementById('userSection');
+        
+        if (loginSection && userSection) {
+            // Nếu chưa có user, hiện login button
+            if (!currentUser) {
+                loginSection.classList.remove('d-none');
+                userSection.classList.add('d-none');
+                console.log('✅ Login button now visible');
+            }
+        }
+    }, 1000);
 });
 
 // Setup event listeners
@@ -337,7 +388,7 @@ async function loadQuickStats() {
         const result = await response.json();
         
         // Update stats cards
-        document.getElementById('statsTotal').textContent = result.AvailableRecords;
+        document.getElementById('statsTotal').textContent = result.TotalBooks;
         document.getElementById('statsRecent').textContent = result.RecentBooks.length;
         document.getElementById('statsTopRated').textContent = result.TopRatedBooks.length;
         
@@ -400,35 +451,84 @@ async function performSearch() {
         return;
     }
     
+    const cacheKey = `search_${query}_${currentPage}_${pageSize}`;
+    
+    // CHECK CACHE
+    const cachedData = smartCache.get(cacheKey);
+    if (cachedData) {
+        displaySearchResults(cachedData, query);
+        console.log(`⚡ Search results from cache`);
+        return;
+    }
+    
     isSearchMode = true;
     currentSearchQuery = query;
     currentPage = 1;
     
-    // Update page title and show books section
     hideAllSections();
     booksSection.classList.remove('d-none');
-    pageTitle.innerHTML = `<i class="bi bi-search"></i> Kết quả tìm kiếm: "${query}"`;
-    setActiveNavItem(''); // Remove active from all nav items
+    pageTitle.innerHTML = `<i class="bi bi-search"></i> Tìm kiếm: "${query}"`;
+    setActiveNavItem('');
     
     showLoading(true);
+    const startTime = performance.now();
+    
     try {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&page=${currentPage}&pageSize=${pageSize}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const result = await response.json();
+        const loadTime = performance.now() - startTime;
         
-        currentPage = result.Page;
-        totalBooks = result.TotalBooks;
-        totalPages = result.TotalPages;
+        // CACHE RESULTS
+        smartCache.set(cacheKey, result);
         
-        currentBooks = result.Data;
-        displayBooks(result.Data);
-        updateBookCount(totalBooks);
-        updatePagination();
+        displaySearchResults(result, query);
+        console.log(`🔍 Search completed in ${loadTime.toFixed(0)}ms`);
         
-        if (result.Data.length === 0) {
-            showNotification(`Không tìm thấy sách nào cho "${query}"`, 'info');
-        }
+    } catch (error) {
+        console.error('Error searching books:', error);
+        showNotification('Lỗi khi tìm kiếm sách', 'error');
+        displayNoBooks();
+    } finally {
+        showLoading(false);
+    }
+}
+
+function displaySearchResults(result, query) {
+    currentPage = result.Page;
+    totalBooks = result.TotalBooks;
+    totalPages = result.TotalPages;
+    
+    currentBooks = result.Data;
+    displayBooks(result.Data);
+    updateBookCount(totalBooks);
+    updatePagination();
+    
+    if (result.Data.length === 0) {
+        showNotification(`Không tìm thấy sách nào cho "${query}"`, 'info');
+    }
+}
+
+async function performSearchForPage(page) {
+    const query = currentSearchQuery;
+    const cacheKey = `search_${query}_${page}_${pageSize}`;
+    
+    // CHECK CACHE
+    const cachedData = smartCache.get(cacheKey);
+    if (cachedData) {
+        displaySearchResults(cachedData, query);
+        return;
+    }
+    
+    showLoading(true);
+    try {
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const result = await response.json();
+        smartCache.set(cacheKey, result);
+        displaySearchResults(result, query);
         
     } catch (error) {
         console.error('Error searching books:', error);
@@ -650,7 +750,7 @@ function previewEditImage(imageUrl) {
     }
 }
 
-// Form handlers
+// Form handlers - SỬA LỖI CHÍNH Ở ĐÂY
 async function handleAddBook(e) {
     e.preventDefault();
     
@@ -664,16 +764,28 @@ async function handleAddBook(e) {
         return;
     }
     
-    if (parseFloat(price) < 0) {
+    const priceValue = parseFloat(price);
+    if (isNaN(priceValue) || priceValue < 0) {
         showNotification('Giá sách phải là số dương', 'error');
         return;
     }
     
+    // LỖI CHÍNH: THIẾU KIỂM TRA VÀ PARSE PAGES
+    const pagesInput = document.getElementById('bookPages').value?.trim();
+    let pages = null;
+    if (pagesInput && pagesInput !== '') {
+        const pagesValue = parseInt(pagesInput);
+        if (!isNaN(pagesValue) && pagesValue > 0) {
+            pages = pagesValue;
+        }
+    }
+    
     const formData = {
+        Id: 0,
         Title: title,
         Author: author,
-        Price: Math.round(parseFloat(price) * 100) / 100, // ĐẢM BẢO 2 CHỮ SỐ THẬP PHÂN
-        Pages: parseInt(document.getElementById('bookPages').value) || null,
+        Price: Math.round(priceValue * 100) / 100, // ĐẢM BẢO 2 CHỮ SỐ THẬP PHÂN
+        Pages: pages, // SỬA LỖI: DÙNG BIẾN ĐÃ KIỂM TRA
         Language: document.getElementById('bookLanguage').value?.trim() || null,
         Description: document.getElementById('bookDescription').value?.trim() || null,
         Genres: document.getElementById('bookGenres').value?.trim() || null,
@@ -684,7 +796,7 @@ async function handleAddBook(e) {
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="bi bi-spinner-border"></i> Đang thêm...';
+    submitBtn.innerHTML = '<i class="bi bi-spinner-border spinner-border-sm"></i> Đang thêm...';
     
     try {
         console.log('📤 Sending book data:', formData);
@@ -712,7 +824,7 @@ async function handleAddBook(e) {
         showNotification('Thêm sách thành công!', 'success');
         
         // XÓA CACHE ĐỂ RELOAD FRESH DATA
-        smartCache.data.clear();
+        smartCache.clear();
         bookDetailsCache.clear();
         preloadedPages.clear();
         
@@ -737,28 +849,74 @@ async function handleEditBook(e) {
     e.preventDefault();
     
     const bookId = parseInt(document.getElementById('editBookId').value);
+    
+    const title = document.getElementById('editBookTitle').value.trim();
+    const author = document.getElementById('editBookAuthor').value.trim();
+    const price = document.getElementById('editBookPrice').value;
+    
+    if (!title || !author || !price) {
+        showNotification('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
+        return;
+    }
+    
+    const priceValue = parseFloat(price);
+    if (isNaN(priceValue) || priceValue < 0) {
+        showNotification('Giá sách phải là số dương', 'error');
+        return;
+    }
+    
+    // KIỂM TRA PAGES TƯƠNG TỰ NHƯ ADD
+    const pagesInput = document.getElementById('editBookPages').value?.trim();
+    let pages = null;
+    if (pagesInput && pagesInput !== '') {
+        const pagesValue = parseInt(pagesInput);
+        if (!isNaN(pagesValue) && pagesValue > 0) {
+            pages = pagesValue;
+        }
+    }
+    
     const formData = {
         Id: bookId,
-        Title: document.getElementById('editBookTitle').value,
-        Author: document.getElementById('editBookAuthor').value,
-        Price: parseFloat(document.getElementById('editBookPrice').value),
-        Pages: parseInt(document.getElementById('editBookPages').value) || null,
-        Language: document.getElementById('editBookLanguage').value || null,
-        Description: document.getElementById('editBookDescription').value || null,
-        Genres: document.getElementById('editBookGenres').value || null,
-        CoverImg: document.getElementById('editBookCoverImg').value || null
+        Title: title,
+        Author: author,
+        Price: Math.round(priceValue * 100) / 100,
+        Pages: pages,
+        Language: document.getElementById('editBookLanguage').value?.trim() || null,
+        Description: document.getElementById('editBookDescription').value?.trim() || null,
+        Genres: document.getElementById('editBookGenres').value?.trim() || null,
+        CoverImg: document.getElementById('editBookCoverImg').value?.trim() || null
     };
     
+    // Disable button
+    const submitBtn = document.querySelector('#editBookModal .btn-warning');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-spinner-border spinner-border-sm"></i> Đang cập nhật...';
+    
     try {
+        console.log('📤 Updating book:', formData);
+        
         const response = await fetch(`${API_BASE_URL}/${bookId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json' 
+            },
             body: JSON.stringify(formData)
         });
         
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
         
+        console.log('✅ Book updated successfully');
         showNotification('Cập nhật sách thành công!', 'success');
+        
+        // XÓA CACHE
+        smartCache.clear();
+        bookDetailsCache.clear();
+        preloadedPages.clear();
         
         // Close edit modal
         const editModal = bootstrap.Modal.getInstance(document.getElementById('editBookModal'));
@@ -768,8 +926,11 @@ async function handleEditBook(e) {
         loadCurrentSection();
         
     } catch (error) {
-        console.error('Error updating book:', error);
-        showNotification('Lỗi khi cập nhật sách', 'error');
+        console.error('❌ Error updating book:', error);
+        showNotification(`Lỗi khi cập nhật sách: ${error.message}`, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     }
 }
 
@@ -781,6 +942,11 @@ async function deleteBook(bookId) {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         showNotification('Xóa sách thành công!', 'success');
+        
+        // XÓA CACHE
+        smartCache.clear();
+        bookDetailsCache.clear();
+        preloadedPages.clear();
         
         // Close detail modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('bookModal'));
@@ -892,75 +1058,6 @@ function goToPage(page) {
         performSearchForPage(page);
     } else {
         loadCurrentSection();
-    }
-}
-
-async function performSearch() {
-    const query = searchInput.value.trim();
-    
-    if (!query) {
-        isSearchMode = false;
-        currentSearchQuery = '';
-        showAllBooks();
-        return;
-    }
-    
-    const cacheKey = `search_${query}_${currentPage}_${pageSize}`;
-    
-    // CHECK CACHE
-    const cachedData = smartCache.get(cacheKey);
-    if (cachedData) {
-        displaySearchResults(cachedData, query);
-        console.log(`⚡ Search results from cache`);
-        return;
-    }
-    
-    isSearchMode = true;
-    currentSearchQuery = query;
-    currentPage = 1;
-    
-    hideAllSections();
-    booksSection.classList.remove('d-none');
-    pageTitle.innerHTML = `<i class="bi bi-search"></i> Tìm kiếm: "${query}"`;
-    setActiveNavItem('');
-    
-    showLoading(true);
-    const startTime = performance.now();
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&page=${currentPage}&pageSize=${pageSize}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const result = await response.json();
-        const loadTime = performance.now() - startTime;
-        
-        // CACHE RESULTS
-        smartCache.set(cacheKey, result);
-        
-        displaySearchResults(result, query);
-        console.log(`🔍 Search completed in ${loadTime.toFixed(0)}ms`);
-        
-    } catch (error) {
-        console.error('Error searching books:', error);
-        showNotification('Lỗi khi tìm kiếm sách', 'error');
-        displayNoBooks();
-    } finally {
-        showLoading(false);
-    }
-}
-
-function displaySearchResults(result, query) {
-    currentPage = result.Page;
-    totalBooks = result.TotalBooks;
-    totalPages = result.TotalPages;
-    
-    currentBooks = result.Data;
-    displayBooks(result.Data);
-    updateBookCount(totalBooks);
-    updatePagination();
-    
-    if (result.Data.length === 0) {
-        showNotification(`Không tìm thấy sách nào cho "${query}"`, 'info');
     }
 }
 
@@ -1081,6 +1178,7 @@ if (window.innerWidth >= 768) {
 } else {
     sidebar.classList.remove('show');
 }
+
 // DEBUG HELPER
 function debugAddBook() {
     console.log('🔍 Debug Add Book Form:');
@@ -1099,5 +1197,263 @@ function debugAddBook() {
         .then(data => console.log('✅ API Connection OK:', data))
         .catch(err => console.error('❌ API Connection Failed:', err));
 }
+// ==========================================
+// GOOGLE AUTHENTICATION FUNCTIONS
+// ==========================================
 
-// Gọi debugAddBook() trong Console để kiểm tra
+// Google Client ID - THAY ĐỔI NÀY
+const GOOGLE_CLIENT_ID = '198205931206-445vmgejdn1s12d5lr9kqc3jj8o1el3u.apps.googleusercontent.com'; // ← THAY BẰNG CLIENT ID THẬT
+
+// Auth state
+let currentUser = null;
+let authToken = null;
+
+// Initialize Google Auth when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGoogleAuth();
+    checkAuthStatus();
+});
+
+function initializeGoogleAuth() {
+    // Initialize Google Sign-In
+    if (typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleLoginResponse,
+            auto_select: false
+        });
+
+        // Setup login button
+        const loginBtn = document.getElementById('googleLoginBtn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function() {
+                google.accounts.id.prompt();
+            });
+        }
+    } else {
+        console.warn('Google Sign-In library not loaded');
+        // Fallback: show login section anyway
+        showLoginSection();
+    }
+}
+
+async function handleGoogleLoginResponse(response) {
+    try {
+        showNotification('Đang đăng nhập...', 'info');
+        
+        // Send Google token to our API
+        const apiResponse = await fetch(`${API_BASE_URL.replace('/BookApi', '')}/auth/google-login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                googleToken: response.credential
+            })
+        });
+
+        const result = await apiResponse.json();
+
+        if (result.success) {
+            // Save auth info
+            authToken = result.token;
+            currentUser = result.user;
+            
+            // Save to localStorage
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Update UI
+            updateAuthUI();
+            
+            const welcomeMsg = result.isNewUser 
+                ? `Chào mừng ${currentUser.fullName}! Tài khoản đã được tạo.`
+                : `Chào mừng trở lại, ${currentUser.fullName}!`;
+            
+            showNotification(welcomeMsg, 'success');
+            
+            console.log('Login successful:', currentUser);
+        } else {
+            throw new Error(result.message || 'Login failed');
+        }
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showNotification(`Lỗi đăng nhập: ${error.message}`, 'error');
+        showLoginSection();
+    }
+}
+
+function checkAuthStatus() {
+    // Check if user was previously logged in
+    const savedToken = localStorage.getItem('authToken');
+    const savedUser = localStorage.getItem('currentUser');
+    
+    if (savedToken && savedUser) {
+        authToken = savedToken;
+        currentUser = JSON.parse(savedUser);
+        
+        // Verify token with server
+        verifyTokenWithServer();
+    } else {
+        showLoginSection();
+    }
+}
+
+async function verifyTokenWithServer() {
+    try {
+        const response = await fetch(`${API_BASE_URL.replace('/BookApi', '')}/auth/verify`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                updateAuthUI();
+                console.log('Token verified, user logged in');
+                return;
+            }
+        }
+        
+        // Token invalid
+        logout();
+        
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        logout();
+    }
+}
+
+function updateAuthUI() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    const userEmail = document.getElementById('userEmail');
+    const userRole = document.getElementById('userRole');
+    const adminMenuLink = document.getElementById('adminMenuLink');
+
+    if (currentUser && authToken) {
+        // Hide login, show user info
+        loginSection.classList.add('d-none');
+        userSection.classList.remove('d-none');
+        
+        // Update user info
+        userAvatar.src = currentUser.avatarUrl || 'https://via.placeholder.com/32x32/6c757d/ffffff?text=U';
+        userName.textContent = currentUser.fullName || 'User';
+        userEmail.textContent = currentUser.email || '';
+        
+        // Update role badge
+        userRole.textContent = currentUser.role || 'Customer';
+        userRole.className = `badge ms-2 ${currentUser.role === 'Admin' ? 'bg-danger' : 'bg-primary'}`;
+        
+        // Show/hide admin menu
+        if (currentUser.role === 'Admin') {
+            adminMenuLink.style.display = 'block';
+        } else {
+            adminMenuLink.style.display = 'none';
+        }
+        
+    } else {
+        showLoginSection();
+    }
+}
+
+function showLoginSection() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    
+    loginSection.classList.remove('d-none');
+    userSection.classList.add('d-none');
+}
+
+function logout() {
+    // Clear auth data
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    
+    // Update UI
+    showLoginSection();
+    
+    // Sign out from Google
+    if (typeof google !== 'undefined') {
+        google.accounts.id.disableAutoSelect();
+    }
+    
+    showNotification('Đăng xuất thành công', 'info');
+    console.log('User logged out');
+}
+
+function showProfile() {
+    if (!currentUser) {
+        showNotification('Vui lòng đăng nhập', 'warning');
+        return;
+    }
+    
+    alert(`Profile:\nTên: ${currentUser.fullName}\nEmail: ${currentUser.email}\nRole: ${currentUser.role}`);
+    // TODO: Tạo modal profile chi tiết
+}
+
+function showAdminPanel() {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới truy cập được', 'error');
+        return;
+    }
+    
+    alert('Admin Panel - Sẽ phát triển sau!');
+    // TODO: Tạo admin panel
+}
+
+// Helper function to make authenticated API calls
+async function makeAuthenticatedRequest(url, options = {}) {
+    if (!authToken) {
+        throw new Error('Not authenticated');
+    }
+    
+    const headers = {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    return fetch(url, {
+        ...options,
+        headers
+    });
+}
+
+// Test admin endpoint
+async function testAdminEndpoint() {
+    try {
+        const response = await makeAuthenticatedRequest(`${API_BASE_URL.replace('/BookApi', '')}/auth/admin-test`);
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`Admin test thành công: ${result.message}`, 'success');
+        } else {
+            showNotification('Không có quyền admin', 'error');
+        }
+    } catch (error) {
+        showNotification('Lỗi test admin', 'error');
+    }
+}
+
+function forceShowLoginButton() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    
+    if (loginSection) {
+        loginSection.classList.remove('d-none');
+        console.log('Login section visible');
+    }
+    if (userSection) {
+        userSection.classList.add('d-none');
+        console.log('User section hidden');
+    }
+}
