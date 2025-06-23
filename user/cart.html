@@ -64,16 +64,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/common.js"></script>
     <script>
-            if (!localStorage.getItem('authToken')) {
-        localStorage.setItem('authToken', 'fake-token-for-testing');
-        localStorage.setItem('currentUser', JSON.stringify({
-            id: 1,
-            email: 'admin@test.com',
-            fullName: 'Test Admin',
-            role: 'Admin', // Đổi thành 'Customer' nếu test User
-            avatarUrl: 'https://via.placeholder.com/40'
-        }));
-    }
+    //         if (!localStorage.getItem('authToken')) {
+    //     localStorage.setItem('authToken', 'fake-token-for-testing');
+    //     localStorage.setItem('currentUser', JSON.stringify({
+    //         id: 1,
+    //         email: 'admin@test.com',
+    //         fullName: 'Test Admin',
+    //         role: 'Admin', // Đổi thành 'Customer' nếu test User
+    //         avatarUrl: 'https://via.placeholder.com/40'
+    //     }));
+    // }
             checkAuth();
         loadCart();
         

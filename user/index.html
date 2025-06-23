@@ -137,16 +137,16 @@
 <script src="../js/common.js"></script>
 <script src="../js/user.js"></script>
 <script>
-    if (!localStorage.getItem('authToken')) {
-        localStorage.setItem('authToken', 'fake-token-for-testing');
-        localStorage.setItem('currentUser', JSON.stringify({
-            id: 1,
-            email: 'admin@test.com',
-            fullName: 'Test Admin',
-            role: 'Admin',
-            avatarUrl: 'https://via.placeholder.com/40'
-        }));
-    }
+    // if (!localStorage.getItem('authToken')) {
+    //     localStorage.setItem('authToken', 'fake-token-for-testing');
+    //     localStorage.setItem('currentUser', JSON.stringify({
+    //         id: 1,
+    //         email: 'admin@test.com',
+    //         fullName: 'Test Admin',
+    //         role: 'Admin',
+    //         avatarUrl: 'https://via.placeholder.com/40'
+    //     }));
+    // }
 
     checkAuth();
     updateUserInfo();
