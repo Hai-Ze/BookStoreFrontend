@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BookStore - User</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <!-- Sidebar toggle button -->
+            <button class="btn btn-outline-light me-3" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-book"></i> BookStore
+            </a>
+
+            <div class="d-flex align-items-center ms-auto">
+                <!-- Search bar -->
+                <div class="d-flex me-3">
+                    <input class="form-control" type="search" placeholder="Search books..." id="searchInput" style="width: 300px;">
+                    <button class="btn btn-outline-light ms-1" onclick="searchBooks()">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+
+                <!-- Cart Icon -->
+                <div class="me-3" id="cartSection">
+                    <button class="btn btn-outline-light position-relative" onclick="showCart()" title="Cart">
+                        <i class="bi bi-cart3"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartCount" style="display: none;">
+                            0
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Auth Section -->
+                <div id="authSection">
+                    <!-- Login Button -->
+                    <div id="loginSection" class="">
+                        <button class="btn btn-primary" id="googleLoginBtn">
+                            <i class="bi bi-google"></i> Login with Google
+                        </button>
+                    </div>
+
+                    <!-- User Info -->
+                    <div id="userSection" class="d-none">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                                <img id="userAvatar" src="" class="rounded-circle me-2" width="32" height="32" alt="Avatar">
+                                <span id="userName">User</span>
+                                <span id="userRole" class="badge bg-primary ms-2">Customer</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header" id="userEmail">user@email.com</h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="showProfile()">
+                                    <i class="bi bi-person"></i> Profile
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="logout()">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse show" style="margin-top: 56px;">
+                <div class="position-sticky pt-3">
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                        <span>Book Categories</span>
+                    </h6>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" onclick="showAllBooks()" id="nav-all-books">
+                                <i class="bi bi-book-half"></i>
+                                All Books
+                                <span class="badge bg-primary ms-auto" id="totalBooksCount">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" onclick="showTopRated()" id="nav-top-rated">
+                                <i class="bi bi-star-fill"></i>
+                                Top Rated Books
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4" style="margin-top: 56px;">
+                <div class="pt-3">
+                    <!-- Page Header -->
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+                        <h1 class="h2" id="pageTitle">
+                            <i class="bi bi-book-half"></i> All Books
+                        </h1>
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <div class="btn-group me-2">
+                                <select class="form-select form-select-sm" id="pageSizeSelect">
+                                    <option value="12">12 / page</option>
+                                    <option value="20" selected>20 / page</option>
+                                    <option value="30">30 / page</option>
+                                    <option value="40">40 / page</option>
+                                    <option value="50">50 / page</option>
+                                </select>
+                            </div>
+                            <div class="badge bg-info fs-6" id="bookCount">0 books</div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="text-center d-none py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading data...</p>
+                    </div>
+
+                    <!-- Books Grid -->
+                    <div id="booksSection">
+                        <div id="booksContainer" class="row">
+                            <!-- Books will be loaded here -->
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <nav aria-label="Books pagination" id="paginationNav" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                <div class="text-muted" id="paginationInfo">
+                                    <!-- Pagination info will be shown here -->
+                                </div>
+                                <ul class="pagination mb-0" id="paginationList">
+                                    <!-- Pagination buttons will be generated here -->
+                                </ul>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div class="modal fade" id="bookModal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalBookTitle">Book Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBookContent">
+                    <!-- Book details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="addToCart(currentBookId)">
+                        <i class="bi bi-cart-plus"></i> Add to Cart
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal fade" id="cartModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cart3"></i> Cart 
+                        <span class="badge bg-primary" id="cartTotalItems">0</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cartItemsContainer">
+                        <!-- Cart items will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-outline-danger" onclick="clearCart()">
+                            <i class="bi bi-trash"></i> Clear All
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <h5 class="mb-0 me-3">
+                            Total: <span class="text-success" id="cartTotalAmount">$0.00</span>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="proceedToCheckout()">
+                            <i class="bi bi-credit-card"></i> Checkout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast for notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notification" class="toast" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="notificationMessage">
+                <!-- Notification message -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="js/main.js"></script>
+</body>
+</html>

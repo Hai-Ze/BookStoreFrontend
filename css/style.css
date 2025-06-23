@@ -448,3 +448,68 @@ main {
         page-break-inside: avoid;
     }
 }
+.rating-breakdown {
+    max-height: 3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rating-breakdown:hover {
+    overflow: visible;
+    white-space: normal;
+    max-height: none;
+}
+.modal-content .row {
+    margin-bottom: 1rem;
+}
+
+.progress {
+    height: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+.modal-dialog.modal-md {
+    max-width: 600px; /* Giảm kích thước tối đa */
+}
+
+.description-text {
+    display: block;
+    word-wrap: break-word;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.description-text::-webkit-scrollbar {
+    width: 8px;
+}
+
+.description-text::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.description-text::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.description-text::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

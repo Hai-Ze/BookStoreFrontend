@@ -7,9 +7,9 @@ let currentSearchQuery = '';
 
 // Pagination variables
 let currentPage = 1;
-let pageSize = 15; 
+let pageSize = 15;
 let totalBooks = 0;
-let totalPages = 0; 
+let totalPages = 0;
 
 // Current section
 let currentSection = 'all-books';
@@ -101,7 +101,8 @@ const pageTitle = document.getElementById('pageTitle');
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('pageSizeSelect').value = '20';
+    const pageSizeSelect = document.getElementById('pageSizeSelect');
+    if (pageSizeSelect) pageSizeSelect.value = '20';
     setupEventListeners();
     showAllBooks();
     setTimeout(() => {
@@ -109,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const userSection = document.getElementById('userSection');
         
         if (loginSection && userSection) {
-            // Nếu chưa có user, hiện login button
             if (!currentUser) {
                 loginSection.classList.remove('d-none');
                 userSection.classList.add('d-none');
@@ -122,31 +122,35 @@ document.addEventListener('DOMContentLoaded', function() {
 // Setup event listeners
 function setupEventListeners() {
     // Sidebar toggle
-    sidebarToggle.addEventListener('click', toggleSidebar);
+    if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
     
     // Forms
-    addBookForm.addEventListener('submit', handleAddBook);
+    if (addBookForm) addBookForm.addEventListener('submit', handleAddBook);
     
     // Search
-    searchInput.addEventListener('input', debounce(handleSearch, 300));
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            performSearch();
-        }
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(handleSearch, 300));
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    }
     
     // Page size
     const pageSizeSelect = document.getElementById('pageSizeSelect');
-    pageSizeSelect.addEventListener('change', function() {
-        pageSize = parseInt(this.value);
-        currentPage = 1;
-        
-        if (isSearchMode) {
-            performSearch();
-        } else {
-            loadCurrentSection();
-        }
-    });
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function() {
+            pageSize = parseInt(this.value);
+            currentPage = 1;
+            
+            if (isSearchMode) {
+                performSearch();
+            } else {
+                loadCurrentSection();
+            }
+        });
+    }
 
     // Preview image in edit modal
     const editCoverInput = document.getElementById('editBookCoverImg');
@@ -158,7 +162,7 @@ function setupEventListeners() {
 
     // Close mobile sidebar when clicking outside
     document.addEventListener('click', function(e) {
-        if (window.innerWidth < 768) {
+        if (window.innerWidth < 768 && sidebar && sidebarToggle) {
             if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
                 sidebar.classList.remove('show');
             }
@@ -168,18 +172,16 @@ function setupEventListeners() {
 
 // Sidebar functions
 function toggleSidebar() {
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 768 && sidebar) {
         sidebar.classList.toggle('show');
     }
 }
 
 function setActiveNavItem(itemId) {
-    // Remove active class from all nav items
     document.querySelectorAll('.sidebar .nav-link').forEach(link => {
         link.classList.remove('active');
     });
     
-    // Add active class to selected item
     if (itemId) {
         const activeItem = document.getElementById(`nav-${itemId}`);
         if (activeItem) {
@@ -190,32 +192,38 @@ function setActiveNavItem(itemId) {
 
 // Section management
 function showAllBooks() {
+    if (!booksSection || !pageTitle) return;
     currentSection = 'all-books';
     setActiveNavItem('all-books');
     hideAllSections();
     booksSection.classList.remove('d-none');
     pageTitle.innerHTML = '<i class="bi bi-book-half"></i> Tất cả sách';
     
-    // Reset search
     isSearchMode = false;
     currentSearchQuery = '';
-    searchInput.value = '';
+    if (searchInput) searchInput.value = '';
     
     loadAllBooks(1);
     closeMobileSidebar();
 }
 
 function showAddForm() {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền thêm sách', 'error');
+        return;
+    }
+    if (!addBookSection || !pageTitle) return;
     currentSection = 'add-book';
     setActiveNavItem('add-book');
     hideAllSections();
     addBookSection.classList.remove('d-none');
     pageTitle.innerHTML = '<i class="bi bi-plus-circle"></i> Thêm sách mới';
-    addBookForm.reset();
+    if (addBookForm) addBookForm.reset();
     closeMobileSidebar();
 }
 
 function showTopRated() {
+    if (!booksSection || !pageTitle) return;
     currentSection = 'top-rated';
     setActiveNavItem('top-rated');
     hideAllSections();
@@ -226,6 +234,11 @@ function showTopRated() {
 }
 
 function showQuickStats() {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền xem thống kê', 'error');
+        return;
+    }
+    if (!statsSection || !pageTitle) return;
     currentSection = 'stats';
     setActiveNavItem('stats');
     hideAllSections();
@@ -236,13 +249,13 @@ function showQuickStats() {
 }
 
 function hideAllSections() {
-    booksSection.classList.add('d-none');
-    addBookSection.classList.add('d-none');
-    statsSection.classList.add('d-none');
+    if (booksSection) booksSection.classList.add('d-none');
+    if (addBookSection) addBookSection.classList.add('d-none');
+    if (statsSection) statsSection.classList.add('d-none');
 }
 
 function closeMobileSidebar() {
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 768 && sidebar) {
         sidebar.classList.remove('show');
     }
 }
@@ -264,13 +277,10 @@ function loadCurrentSection() {
 async function loadAllBooks(page = 1) {
     const cacheKey = `books_${page}_${pageSize}`;
     
-    // 1. CHECK CACHE TRƯỚC
     const cachedData = smartCache.get(cacheKey);
     if (cachedData) {
         displayCachedData(cachedData);
         console.log(`⚡ Loaded from cache in ~5ms`);
-        
-        // Preload next page trong background
         preloadNextPage(page);
         return;
     }
@@ -285,13 +295,8 @@ async function loadAllBooks(page = 1) {
         const result = await response.json();
         const loadTime = performance.now() - startTime;
         
-        // 2. LƯU VÀO CACHE
         smartCache.set(cacheKey, result);
-        
-        // 3. DISPLAY
         displayLoadedData(result, loadTime);
-        
-        // 4. PRELOAD NEXT PAGE
         preloadNextPage(page);
         
     } catch (error) {
@@ -332,7 +337,6 @@ function displayLoadedData(result, loadTime) {
     showNotification(`Tải ${result.Data.length} sách trong ${loadTime.toFixed(0)}ms`, 'success');
 }
 
-// PRELOAD NEXT PAGE
 async function preloadNextPage(currentPage) {
     const nextPage = currentPage + 1;
     const cacheKey = `books_${nextPage}_${pageSize}`;
@@ -380,6 +384,10 @@ async function loadTopRatedBooks(page = 1) {
 }
 
 async function loadQuickStats() {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền xem thống kê', 'error');
+        return;
+    }
     showLoading(true);
     try {
         const response = await fetch(`${API_BASE_URL}/quick-stats`);
@@ -387,12 +395,10 @@ async function loadQuickStats() {
         
         const result = await response.json();
         
-        // Update stats cards
         document.getElementById('statsTotal').textContent = result.TotalBooks;
         document.getElementById('statsRecent').textContent = result.RecentBooks.length;
         document.getElementById('statsTopRated').textContent = result.TopRatedBooks.length;
         
-        // Display top rated books in stats section
         displayTopRatedInStats(result.TopRatedBooks);
         
     } catch (error) {
@@ -442,7 +448,7 @@ function displayTopRatedInStats(books) {
 
 // Search functions
 async function performSearch() {
-    const query = searchInput.value.trim();
+    const query = searchInput ? searchInput.value.trim() : '';
     
     if (!query) {
         isSearchMode = false;
@@ -453,7 +459,6 @@ async function performSearch() {
     
     const cacheKey = `search_${query}_${currentPage}_${pageSize}`;
     
-    // CHECK CACHE
     const cachedData = smartCache.get(cacheKey);
     if (cachedData) {
         displaySearchResults(cachedData, query);
@@ -465,9 +470,11 @@ async function performSearch() {
     currentSearchQuery = query;
     currentPage = 1;
     
-    hideAllSections();
-    booksSection.classList.remove('d-none');
-    pageTitle.innerHTML = `<i class="bi bi-search"></i> Tìm kiếm: "${query}"`;
+    if (booksSection && pageTitle) {
+        hideAllSections();
+        booksSection.classList.remove('d-none');
+        pageTitle.innerHTML = `<i class="bi bi-search"></i> Tìm kiếm: "${query}"`;
+    }
     setActiveNavItem('');
     
     showLoading(true);
@@ -480,9 +487,7 @@ async function performSearch() {
         const result = await response.json();
         const loadTime = performance.now() - startTime;
         
-        // CACHE RESULTS
         smartCache.set(cacheKey, result);
-        
         displaySearchResults(result, query);
         console.log(`🔍 Search completed in ${loadTime.toFixed(0)}ms`);
         
@@ -514,7 +519,6 @@ async function performSearchForPage(page) {
     const query = currentSearchQuery;
     const cacheKey = `search_${query}_${page}_${pageSize}`;
     
-    // CHECK CACHE
     const cachedData = smartCache.get(cacheKey);
     if (cachedData) {
         displaySearchResults(cachedData, query);
@@ -540,7 +544,7 @@ async function performSearchForPage(page) {
 }
 
 function handleSearch() {
-    const query = searchInput.value.trim();
+    const query = searchInput ? searchInput.value.trim() : '';
     if (query.length >= 2) {
         performSearch();
     } else if (query.length === 0 && isSearchMode) {
@@ -554,6 +558,10 @@ function searchBooks() {
 
 // Display functions
 function displayBooks(books) {
+    if (!booksContainer) {
+        console.error('booksContainer not found');
+        return;
+    }
     booksContainer.innerHTML = '';
     
     if (books.length === 0) {
@@ -561,6 +569,7 @@ function displayBooks(books) {
         return;
     }
     
+    console.log('Displaying books:', books); // Thêm log để kiểm tra
     const fragment = document.createDocumentFragment();
     
     books.forEach((book, index) => {
@@ -578,39 +587,85 @@ function createBookCard(book, index) {
     
     const defaultImage = 'https://via.placeholder.com/200x250/6c757d/ffffff?text=No+Image';
     const coverImage = book.CoverImg || defaultImage;
-    const rating = book.Rating ? parseFloat(book.Rating).toFixed(1) : 'N/A';
     const price = book.Price ? parseFloat(book.Price).toFixed(2) : '0.00';
+    const genres = book.Genres ? book.Genres.replace(/[\[\]"]+/g, '').split(',').join(', ') : '';
+
+    // Parse and convert ratingsByStars to integers
+    let ratings = [0, 0, 0, 0, 0];
+    if (book.RatingsByStars) {
+        try {
+            const cleanedRatings = book.RatingsByStars.replace(/'/g, '"');
+            const parsedRatings = JSON.parse(cleanedRatings);
+            if (Array.isArray(parsedRatings) && parsedRatings.length === 5) {
+                ratings = parsedRatings.map(rating => parseInt(rating, 10));
+            } else {
+                console.warn('Invalid ratingsByStars format or length:', parsedRatings);
+            }
+        } catch (e) {
+            console.error('Error parsing ratingsByStars:', e);
+        }
+    }
+    const totalRatings = ratings.reduce((a, b) => a + b, 0);
+    const averageRating = totalRatings > 0 ? (ratings[0] * 5 + ratings[1] * 4 + ratings[2] * 3 + ratings[3] * 2 + ratings[4] * 1) / totalRatings : 0;
+
+    // Truncate genres if too long with tooltip
+    const maxGenreLength = 30;
+    const displayGenres = genres.length > maxGenreLength ? genres.substring(0, maxGenreLength) + '...' : genres;
+    const genreTooltip = genres.length > maxGenreLength ? `title="${genres}"` : '';
+
+    const isAdmin = currentUser && currentUser.role === 'Admin';
     
     col.innerHTML = `
         <div class="card book-card h-100" onclick="showBookDetails(${book.Id})">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250' viewBox='0 0 200 250'%3E%3Crect width='200' height='250' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.3em' fill='%236c757d'%3EĐang tải...%3C/text%3E%3C/svg%3E" 
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='250' viewBox='0 0 200 250'%3E%3Crect width='200' height='250' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='0.3em' fill='%236c757d'%3ELoading...%3C/text%3E%3C/svg%3E" 
                 data-src="${coverImage}" 
                 class="card-img-top book-cover lazy-load" 
                 alt="${book.Title}"
                 loading="lazy">
             <div class="card-body d-flex flex-column">
                 <h6 class="book-title">${book.Title}</h6>
-                <p class="book-author">tác giả ${book.Author}</p>
+                <p class="book-author">by ${book.Author}</p>
                 <div class="mt-auto">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="book-price">$${price}</span>
-                        ${rating !== 'N/A' ? `
+                        ${totalRatings > 0 ? `
                             <span class="book-rating">
-                                <i class="bi bi-star-fill"></i> ${rating}
+                                <i class="bi bi-star-fill"></i> ${averageRating.toFixed(1)} (${totalRatings.toLocaleString()} reviews)
                             </span>
                         ` : ''}
                     </div>
-                    ${book.Genres ? `
+                    ${genres ? `
                         <div class="mb-2">
-                            <small class="text-muted">${book.Genres}</small>
+                            <small class="text-muted" ${genreTooltip}>Genres: ${displayGenres}</small>
+                        </div>
+                    ` : ''}
+                    ${totalRatings > 0 ? `
+                        <div class="mt-1 rating-breakdown" style="max-height: 3em; overflow: hidden; text-overflow: ellipsis;">
+                            <small class="text-muted">Ratings: 5⭐ ${ratings[0].toLocaleString()}, 4⭐ ${ratings[1].toLocaleString()}, 3⭐ ${ratings[2].toLocaleString()}, 2⭐ ${ratings[3].toLocaleString()}, 1⭐ ${ratings[4].toLocaleString()}</small>
                         </div>
                     ` : ''}
                 </div>
             </div>
             <div class="card-actions">
-                <button class="btn btn-primary btn-sm w-100" onclick="event.stopPropagation(); showBookDetails(${book.Id})">
-                    <i class="bi bi-eye"></i> Xem chi tiết
-                </button>
+                <div class="btn-group w-100" role="group">
+                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); showBookDetails(${book.Id})">
+                        <i class="bi bi-eye"></i> View
+                    </button>
+                    ${isAdmin ? `
+                        <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); editBook(${book.Id})">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteBook(${book.Id})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    ` : `
+                        <button class="btn btn-success btn-sm" 
+                                onclick="event.stopPropagation(); addToCart(${book.Id})" 
+                                ${!currentUser ? 'disabled title="Please log in"' : ''}>
+                            <i class="bi bi-cart-plus"></i> Buy
+                        </button>
+                    `}
+                </div>
             </div>
         </div>
     `;
@@ -621,113 +676,199 @@ function createBookCard(book, index) {
 
 // Book detail and edit functions
 async function showBookDetails(bookId) {
-    // CHECK CACHE TRƯỚC
     let book = bookDetailsCache.get(bookId);
     
     if (!book) {
         try {
-            const response = await fetch(`${API_BASE_URL}/${bookId}`);
+            const response = await fetch(`${API_BASE_URL}/${bookId}/details`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             book = await response.json();
-            // LƯU VÀO CACHE
             bookDetailsCache.set(bookId, book);
         } catch (error) {
             console.error('Error loading book details:', error);
-            showNotification('Lỗi khi tải thông tin sách', 'error');
+            showNotification('Error loading book details', 'error');
             return;
         }
     }
     
     currentBookId = bookId;
     
-    document.getElementById('modalBookTitle').textContent = book.Title;
+    const modalBookTitle = document.getElementById('modalBookTitle');
+    const modalBookContent = document.getElementById('modalBookContent');
+    if (!modalBookTitle || !modalBookContent) return;
     
-    const modalContent = document.getElementById('modalBookContent');
+    modalBookTitle.textContent = book.Title || 'No Title';
+    
     const defaultImage = 'https://via.placeholder.com/200x300/6c757d/ffffff?text=No+Image';
     const coverImage = book.CoverImg || defaultImage;
-    
-    modalContent.innerHTML = `
+    const genres = book.Genres ? book.Genres.replace(/[\[\]"]+/g, '').split(',').join(', ') : '';
+
+    let ratings = [0, 0, 0, 0, 0];
+    if (book.RatingsByStars) {
+        try {
+            const cleanedRatings = book.RatingsByStars.replace(/'/g, '"');
+            const parsedRatings = JSON.parse(cleanedRatings);
+            if (Array.isArray(parsedRatings) && parsedRatings.length === 5) {
+                ratings = parsedRatings.map(rating => parseInt(rating, 10));
+            }
+        } catch (e) {
+            console.error('Error parsing ratingsByStars:', e);
+        }
+    }
+    const totalRatings = ratings.reduce((a, b) => a + b, 0);
+    const averageRating = totalRatings > 0 ? (ratings[0] * 5 + ratings[1] * 4 + ratings[2] * 3 + ratings[3] * 2 + ratings[4] * 1) / totalRatings : 0;
+
+    // HTML for book details with Edit and Delete for Admin
+    modalBookContent.innerHTML = `
         <div class="row">
+            <!-- Book Cover Image -->
             <div class="col-md-4">
                 <img src="${coverImage}" 
-                     class="img-fluid rounded" 
-                     alt="${book.Title}"
-                     onerror="this.src='${defaultImage}'">
+                     class="img-fluid rounded shadow-sm mb-3" 
+                     alt="${book.Title || 'No Title'}"
+                     onerror="this.src='${defaultImage}'"
+                     style="max-width: 100%; height: auto; max-height: 250px;">
             </div>
+            <!-- Book Details -->
             <div class="col-md-8">
-                <h5>${book.Title}</h5>
-                <p class="text-muted">tác giả ${book.Author}</p>
+                <h2 class="mb-2" style="font-size: 1.5rem;">${book.Title || 'No Title'}</h2>
+                <p class="text-muted mb-3" style="font-size: 0.9rem;">by ${book.Author || 'Unknown Author'}</p>
                 
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <strong>Giá:</strong> $${parseFloat(book.Price || 0).toFixed(2)}
+                <!-- Basic Information -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <p><strong>Price:</strong> $${parseFloat(book.Price || 0).toFixed(2)}</p>
                     </div>
-                    <div class="col-sm-6">
-                        ${book.Rating ? `<strong>Đánh giá:</strong> <span class="text-warning"><i class="bi bi-star-fill"></i> ${parseFloat(book.Rating).toFixed(1)}</span>` : ''}
+                    <div class="col-6">
+                        ${totalRatings > 0 ? `
+                            <p><strong>Average Rating:</strong> 
+                                <span class="text-warning"><i class="bi bi-star-fill"></i> ${averageRating.toFixed(1)} 
+                                (${totalRatings.toLocaleString()} reviews)</span>
+                            </p>
+                        ` : ''}
                     </div>
                 </div>
-                
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        ${book.Pages ? `<strong>Số trang:</strong> ${book.Pages}` : ''}
+                <div class="row mb-3">
+                    <div class="col-6">
+                        ${book.Pages ? `<p><strong>Pages:</strong> ${book.Pages}</p>` : ''}
                     </div>
-                    <div class="col-sm-6">
-                        ${book.Language ? `<strong>Ngôn ngữ:</strong> ${book.Language}` : ''}
+                    <div class="col-6">
+                        ${book.Language ? `<p><strong>Language:</strong> ${book.Language}</p>` : ''}
                     </div>
                 </div>
-                
-                ${book.Series ? `<p><strong>Series:</strong> ${book.Series}</p>` : ''}
-                ${book.Genres ? `<p><strong>Thể loại:</strong> ${book.Genres}</p>` : ''}
-                ${book.Description ? `<p><strong>Mô tả:</strong> ${book.Description}</p>` : ''}
-                ${book.NumRatings ? `<p><strong>Tổng số đánh giá:</strong> ${book.NumRatings}</p>` : ''}
+                ${genres ? `<p><strong>Genres:</strong> ${genres}</p>` : ''}
+                ${book.Description ? `
+                    <p><strong>Description:</strong> 
+                        <span class="description-text" style="max-height: 100px; overflow-y: auto; display: block; font-size: 0.9rem;">${book.Description}</span>
+                    </p>
+                ` : '<p><strong>Description:</strong> No description available</p>'}
+
+                <!-- Rating Distribution with Legend -->
+                ${totalRatings > 0 ? `
+                    <div class="mt-3">
+                        <h4 style="font-size: 1.1rem;">Rating Distribution</h4>
+                        <div class="progress mb-1" style="height: 10px;">
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                 style="width: ${((ratings[0] / totalRatings) * 100).toFixed(1)}%"></div>
+                        </div>
+                        <div class="progress mb-1" style="height: 10px;">
+                            <div class="progress-bar bg-info" role="progressbar" 
+                                 style="width: ${((ratings[1] / totalRatings) * 100).toFixed(1)}%"></div>
+                        </div>
+                        <div class="progress mb-1" style="height: 10px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: ${((ratings[2] / totalRatings) * 100).toFixed(1)}%"></div>
+                        </div>
+                        <div class="progress mb-1" style="height: 10px;">
+                            <div class="progress-bar bg-secondary" role="progressbar" 
+                                 style="width: ${((ratings[3] / totalRatings) * 100).toFixed(1)}%"></div>
+                        </div>
+                        <div class="progress mb-1" style="height: 10px;">
+                            <div class="progress-bar bg-danger" role="progressbar" 
+                                 style="width: ${((ratings[4] / totalRatings) * 100).toFixed(1)}%"></div>
+                        </div>
+                        <!-- Legend -->
+                        <div class="text-muted small mt-1">
+                            <span class="me-2"><i class="bi bi-square-fill" style="color: #ffc107;"></i> 5 Stars</span>
+                            <span class="me-2"><i class="bi bi-square-fill" style="color: #17a2b8;"></i> 4 Stars</span>
+                            <span class="me-2"><i class="bi bi-square-fill" style="color: #007bff;"></i> 3 Stars</span>
+                            <span class="me-2"><i class="bi bi-square-fill" style="color: #6c757d;"></i> 2 Stars</span>
+                            <span><i class="bi bi-square-fill" style="color: #dc3545;"></i> 1 Star</span>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Action Buttons for Admin -->
+                <div class="mt-4">
+                    ${currentUser && currentUser.role === 'Admin' ? `
+                        <button type="button" class="btn btn-warning me-2" onclick="editBook(${bookId})">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="deleteBook(${bookId})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         </div>
     `;
-    
-    document.getElementById('editBookBtn').onclick = () => editBook(bookId);
-    document.getElementById('deleteBookBtn').onclick = () => deleteBook(bookId);
-    
+
     const modal = new bootstrap.Modal(document.getElementById('bookModal'));
-    modal.show();
+    if (modal) modal.show();
 }
 
 async function editBook(bookId) {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền chỉnh sửa sách', 'error');
+        return;
+    }
+    
     try {
-        // Close detail modal
         const detailModal = bootstrap.Modal.getInstance(document.getElementById('bookModal'));
         if (detailModal) detailModal.hide();
         
-        // SỬ DỤNG CACHE THAY VÌ FETCH MỚI
         let book = bookDetailsCache.get(bookId);
         
         if (!book) {
-            // Nếu không có trong cache, fetch một lần
-            const response = await fetch(`${API_BASE_URL}/${bookId}`);
+            const response = await fetch(`${API_BASE_URL}/${bookId}/details`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             book = await response.json();
             bookDetailsCache.set(bookId, book);
         }
         
-        // Fill edit form NGAY LẬP TỨC
-        document.getElementById('editBookId').value = book.Id;
-        document.getElementById('editBookTitle').value = book.Title || '';
-        document.getElementById('editBookAuthor').value = book.Author || '';
-        document.getElementById('editBookPrice').value = book.Price || '';
-        document.getElementById('editBookPages').value = book.Pages || '';
-        document.getElementById('editBookLanguage').value = book.Language || '';
-        document.getElementById('editBookDescription').value = book.Description || '';
-        document.getElementById('editBookGenres').value = book.Genres || '';
-        document.getElementById('editBookCoverImg').value = book.CoverImg || '';
+        const editBookId = document.getElementById('editBookId');
+        const editBookTitle = document.getElementById('editBookTitle');
+        const editBookAuthor = document.getElementById('editBookAuthor');
+        const editBookPrice = document.getElementById('editBookPrice');
+        const editBookPages = document.getElementById('editBookPages');
+        const editBookLanguage = document.getElementById('editBookLanguage');
+        const editBookDescription = document.getElementById('editBookDescription');
+        const editBookGenres = document.getElementById('editBookGenres');
+        const editBookCoverImg = document.getElementById('editBookCoverImg');
         
-        if (book.CoverImg) {
-            previewEditImage(book.CoverImg);
+        if (editBookId && editBookTitle && editBookAuthor && editBookPrice && editBookPages && 
+            editBookLanguage && editBookDescription && editBookGenres && editBookCoverImg) {
+            editBookId.value = book.Id || 0;
+            editBookTitle.value = book.Title || '';
+            editBookAuthor.value = book.Author || '';
+            editBookPrice.value = book.Price || '';
+            editBookPages.value = book.Pages || '';
+            editBookLanguage.value = book.Language || '';
+            editBookDescription.value = book.Description || '';
+            editBookGenres.value = book.Genres || '';
+            editBookCoverImg.value = book.CoverImg || '';
+            
+            if (book.CoverImg) {
+                previewEditImage(book.CoverImg);
+            }
+        } else {
+            console.error('One or more edit form elements not found');
         }
         
-        // Show edit modal
         const editModal = new bootstrap.Modal(document.getElementById('editBookModal'));
-        editModal.show();
+        if (editModal) editModal.show();
         
         console.log(`⚡ Edit form loaded instantly from cache`);
         
@@ -750,14 +891,17 @@ function previewEditImage(imageUrl) {
     }
 }
 
-// Form handlers - SỬA LỖI CHÍNH Ở ĐÂY
 async function handleAddBook(e) {
     e.preventDefault();
     
-    // Kiểm tra validation
-    const title = document.getElementById('bookTitle').value.trim();
-    const author = document.getElementById('bookAuthor').value.trim();
-    const price = document.getElementById('bookPrice').value;
+    if (!currentUser || !authToken || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền thêm sách hoặc cần đăng nhập', 'error');
+        return;
+    }
+    
+    const title = document.getElementById('bookTitle')?.value.trim();
+    const author = document.getElementById('bookAuthor')?.value.trim();
+    const price = document.getElementById('bookPrice')?.value;
     
     if (!title || !author || !price) {
         showNotification('Vui lòng điền đầy đủ thông tin bắt buộc (Tiêu đề, Tác giả, Giá)', 'error');
@@ -770,8 +914,7 @@ async function handleAddBook(e) {
         return;
     }
     
-    // LỖI CHÍNH: THIẾU KIỂM TRA VÀ PARSE PAGES
-    const pagesInput = document.getElementById('bookPages').value?.trim();
+    const pagesInput = document.getElementById('bookPages')?.value?.trim();
     let pages = null;
     if (pagesInput && pagesInput !== '') {
         const pagesValue = parseInt(pagesInput);
@@ -784,15 +927,14 @@ async function handleAddBook(e) {
         Id: 0,
         Title: title,
         Author: author,
-        Price: Math.round(priceValue * 100) / 100, // ĐẢM BẢO 2 CHỮ SỐ THẬP PHÂN
-        Pages: pages, // SỬA LỖI: DÙNG BIẾN ĐÃ KIỂM TRA
-        Language: document.getElementById('bookLanguage').value?.trim() || null,
-        Description: document.getElementById('bookDescription').value?.trim() || null,
-        Genres: document.getElementById('bookGenres').value?.trim() || null,
-        CoverImg: document.getElementById('bookCoverImg').value?.trim() || null
+        Price: Math.round(priceValue * 100) / 100,
+        Pages: pages,
+        Language: document.getElementById('bookLanguage')?.value?.trim() || null,
+        Description: document.getElementById('bookDescription')?.value?.trim() || null,
+        Genres: document.getElementById('bookGenres')?.value?.trim() || null,
+        CoverImg: document.getElementById('bookCoverImg')?.value?.trim() || null
     };
     
-    // Disable form để tránh double submit
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
@@ -805,7 +947,8 @@ async function handleAddBook(e) {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${authToken}`
             },
             body: JSON.stringify(formData)
         });
@@ -823,36 +966,35 @@ async function handleAddBook(e) {
         
         showNotification('Thêm sách thành công!', 'success');
         
-        // XÓA CACHE ĐỂ RELOAD FRESH DATA
         smartCache.clear();
         bookDetailsCache.clear();
         preloadedPages.clear();
         
-        // Reset form
         addBookForm.reset();
-        
-        // Về trang 1 để thấy sách mới
         showAllBooks();
         
     } catch (error) {
         console.error('❌ Error adding book:', error);
         showNotification(`Lỗi khi thêm sách: ${error.message}`, 'error');
     } finally {
-        // Re-enable form
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
     }
 }
 
-// Handle edit book - sử dụng onclick thay vì form submit
 async function handleEditBook(e) {
     e.preventDefault();
     
-    const bookId = parseInt(document.getElementById('editBookId').value);
+    if (!currentUser || !authToken || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền chỉnh sửa sách hoặc cần đăng nhập', 'error');
+        return;
+    }
     
-    const title = document.getElementById('editBookTitle').value.trim();
-    const author = document.getElementById('editBookAuthor').value.trim();
-    const price = document.getElementById('editBookPrice').value;
+    const bookId = parseInt(document.getElementById('editBookId')?.value);
+    
+    const title = document.getElementById('editBookTitle')?.value.trim();
+    const author = document.getElementById('editBookAuthor')?.value.trim();
+    const price = document.getElementById('editBookPrice')?.value;
     
     if (!title || !author || !price) {
         showNotification('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
@@ -865,8 +1007,7 @@ async function handleEditBook(e) {
         return;
     }
     
-    // KIỂM TRA PAGES TƯƠNG TỰ NHƯ ADD
-    const pagesInput = document.getElementById('editBookPages').value?.trim();
+    const pagesInput = document.getElementById('editBookPages')?.value?.trim();
     let pages = null;
     if (pagesInput && pagesInput !== '') {
         const pagesValue = parseInt(pagesInput);
@@ -881,13 +1022,12 @@ async function handleEditBook(e) {
         Author: author,
         Price: Math.round(priceValue * 100) / 100,
         Pages: pages,
-        Language: document.getElementById('editBookLanguage').value?.trim() || null,
-        Description: document.getElementById('editBookDescription').value?.trim() || null,
-        Genres: document.getElementById('editBookGenres').value?.trim() || null,
-        CoverImg: document.getElementById('editBookCoverImg').value?.trim() || null
+        Language: document.getElementById('editBookLanguage')?.value?.trim() || null,
+        Description: document.getElementById('editBookDescription')?.value?.trim() || null,
+        Genres: document.getElementById('editBookGenres')?.value?.trim() || null,
+        CoverImg: document.getElementById('editBookCoverImg')?.value?.trim() || null
     };
     
-    // Disable button
     const submitBtn = document.querySelector('#editBookModal .btn-warning');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
@@ -900,7 +1040,8 @@ async function handleEditBook(e) {
             method: 'PUT',
             headers: { 
                 'Content-Type': 'application/json',
-                'Accept': 'application/json' 
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${authToken}`
             },
             body: JSON.stringify(formData)
         });
@@ -913,16 +1054,13 @@ async function handleEditBook(e) {
         console.log('✅ Book updated successfully');
         showNotification('Cập nhật sách thành công!', 'success');
         
-        // XÓA CACHE
         smartCache.clear();
         bookDetailsCache.clear();
         preloadedPages.clear();
         
-        // Close edit modal
         const editModal = bootstrap.Modal.getInstance(document.getElementById('editBookModal'));
         if (editModal) editModal.hide();
         
-        // Reload current view
         loadCurrentSection();
         
     } catch (error) {
@@ -935,24 +1073,31 @@ async function handleEditBook(e) {
 }
 
 async function deleteBook(bookId) {
+    if (!currentUser || !authToken || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới có quyền xóa sách hoặc cần đăng nhập', 'error');
+        return;
+    }
+    
     if (!confirm('Bạn có chắc chắn muốn xóa cuốn sách này?')) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/${bookId}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/${bookId}`, { 
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         showNotification('Xóa sách thành công!', 'success');
         
-        // XÓA CACHE
         smartCache.clear();
         bookDetailsCache.clear();
         preloadedPages.clear();
         
-        // Close detail modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('bookModal'));
         if (modal) modal.hide();
         
-        // Reload current view
         loadCurrentSection();
         
     } catch (error) {
@@ -966,6 +1111,8 @@ function updatePagination() {
     const paginationNav = document.getElementById('paginationNav');
     const paginationList = document.getElementById('paginationList');
     const paginationInfo = document.getElementById('paginationInfo');
+    
+    if (!paginationNav || !paginationList || !paginationInfo) return;
     
     if (totalPages > 1) {
         paginationNav.classList.remove('d-none');
@@ -981,7 +1128,6 @@ function updatePagination() {
         
         paginationList.innerHTML = '';
         
-        // Previous button
         const prevDisabled = currentPage === 1 ? 'disabled' : '';
         paginationList.innerHTML += `
             <li class="page-item ${prevDisabled}">
@@ -991,7 +1137,6 @@ function updatePagination() {
             </li>
         `;
         
-        // Page numbers
         const startPage = Math.max(1, currentPage - 2);
         const endPage = Math.min(totalPages, currentPage + 2);
         
@@ -1034,7 +1179,6 @@ function updatePagination() {
             `;
         }
         
-        // Next button
         const nextDisabled = currentPage === totalPages ? 'disabled' : '';
         paginationList.innerHTML += `
             <li class="page-item ${nextDisabled}">
@@ -1063,11 +1207,11 @@ function goToPage(page) {
 
 // Utility functions
 function showLoading(show) {
+    if (!loadingSpinner || !booksContainer) return;
     if (show) {
         loadingSpinner.classList.remove('d-none');
         booksContainer.innerHTML = '';
         
-        // Show skeleton cards
         for (let i = 0; i < Math.min(pageSize, 12); i++) {
             booksContainer.innerHTML += `
                 <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
@@ -1088,6 +1232,7 @@ function showLoading(show) {
 }
 
 function displayNoBooks() {
+    if (!booksContainer) return;
     booksContainer.innerHTML = `
         <div class="col-12 text-center py-5">
             <i class="bi bi-book display-1 text-muted"></i>
@@ -1098,7 +1243,7 @@ function displayNoBooks() {
 }
 
 function updateBookCount(count) {
-    bookCount.textContent = `${count} cuốn sách`;
+    if (bookCount) bookCount.textContent = `${count} cuốn sách`;
 }
 
 function updateSidebarStats(count) {
@@ -1134,6 +1279,8 @@ function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     const notificationMessage = document.getElementById('notificationMessage');
     
+    if (!notification || !notificationMessage) return;
+    
     notificationMessage.textContent = message;
     
     notification.className = `toast`;
@@ -1165,57 +1312,31 @@ function debounce(func, wait) {
 
 // Handle window resize for sidebar
 window.addEventListener('resize', function() {
-    if (window.innerWidth >= 768) {
+    if (window.innerWidth >= 768 && sidebar) {
         sidebar.classList.add('show');
-    } else {
+    } else if (sidebar) {
         sidebar.classList.remove('show');
     }
 });
 
 // Initialize sidebar state based on screen size
-if (window.innerWidth >= 768) {
+if (window.innerWidth >= 768 && sidebar) {
     sidebar.classList.add('show');
-} else {
+} else if (sidebar) {
     sidebar.classList.remove('show');
 }
 
-// DEBUG HELPER
-function debugAddBook() {
-    console.log('🔍 Debug Add Book Form:');
-    console.log('Title:', document.getElementById('bookTitle').value);
-    console.log('Author:', document.getElementById('bookAuthor').value);
-    console.log('Price:', document.getElementById('bookPrice').value);
-    console.log('Pages:', document.getElementById('bookPages').value);
-    console.log('Language:', document.getElementById('bookLanguage').value);
-    console.log('Description:', document.getElementById('bookDescription').value);
-    console.log('Genres:', document.getElementById('bookGenres').value);
-    console.log('Cover:', document.getElementById('bookCoverImg').value);
-    
-    // Test API connection
-    fetch(`${API_BASE_URL}/quick-stats`)
-        .then(r => r.json())
-        .then(data => console.log('✅ API Connection OK:', data))
-        .catch(err => console.error('❌ API Connection Failed:', err));
-}
-// ==========================================
 // GOOGLE AUTHENTICATION FUNCTIONS
-// ==========================================
-
-// Google Client ID - THAY ĐỔI NÀY
-const GOOGLE_CLIENT_ID = '198205931206-445vmgejdn1s12d5lr9kqc3jj8o1el3u.apps.googleusercontent.com'; // ← THAY BẰNG CLIENT ID THẬT
-
-// Auth state
+const GOOGLE_CLIENT_ID = '198205931206-445vmgejdn1s12d5lr9kqc3jj8o1el3u.apps.googleusercontent.com';
 let currentUser = null;
 let authToken = null;
 
-// Initialize Google Auth when page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeGoogleAuth();
     checkAuthStatus();
 });
 
 function initializeGoogleAuth() {
-    // Initialize Google Sign-In
     if (typeof google !== 'undefined') {
         google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
@@ -1223,7 +1344,6 @@ function initializeGoogleAuth() {
             auto_select: false
         });
 
-        // Setup login button
         const loginBtn = document.getElementById('googleLoginBtn');
         if (loginBtn) {
             loginBtn.addEventListener('click', function() {
@@ -1232,7 +1352,6 @@ function initializeGoogleAuth() {
         }
     } else {
         console.warn('Google Sign-In library not loaded');
-        // Fallback: show login section anyway
         showLoginSection();
     }
 }
@@ -1241,7 +1360,6 @@ async function handleGoogleLoginResponse(response) {
     try {
         showNotification('Đang đăng nhập...', 'info');
         
-        // Send Google token to our API
         const apiResponse = await fetch(`${API_BASE_URL.replace('/BookApi', '')}/auth/google-login`, {
             method: 'POST',
             headers: {
@@ -1255,15 +1373,12 @@ async function handleGoogleLoginResponse(response) {
         const result = await apiResponse.json();
 
         if (result.success) {
-            // Save auth info
             authToken = result.token;
             currentUser = result.user;
             
-            // Save to localStorage
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
-            // Update UI
             updateAuthUI();
             
             const welcomeMsg = result.isNewUser 
@@ -1273,6 +1388,14 @@ async function handleGoogleLoginResponse(response) {
             showNotification(welcomeMsg, 'success');
             
             console.log('Login successful:', currentUser);
+            
+            // Redirect based on role
+            if (currentUser.role === 'Admin') {
+                window.location.href = 'index_admin.html';
+            } else {
+                window.location.href = 'index_user.html';
+            }
+            
         } else {
             throw new Error(result.message || 'Login failed');
         }
@@ -1285,7 +1408,6 @@ async function handleGoogleLoginResponse(response) {
 }
 
 function checkAuthStatus() {
-    // Check if user was previously logged in
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('currentUser');
     
@@ -1293,7 +1415,6 @@ function checkAuthStatus() {
         authToken = savedToken;
         currentUser = JSON.parse(savedUser);
         
-        // Verify token with server
         verifyTokenWithServer();
     } else {
         showLoginSection();
@@ -1315,11 +1436,18 @@ async function verifyTokenWithServer() {
             if (result.success) {
                 updateAuthUI();
                 console.log('Token verified, user logged in');
+                
+                // Redirect based on role if on wrong page
+                const currentPath = window.location.pathname;
+                if (currentUser.role === 'Admin' && !currentPath.includes('index_admin.html')) {
+                    window.location.href = 'index_admin.html';
+                } else if (currentUser.role === 'Customer' && !currentPath.includes('index_user.html')) {
+                    window.location.href = 'index_user.html';
+                }
                 return;
             }
         }
         
-        // Token invalid
         logout();
         
     } catch (error) {
@@ -1336,30 +1464,35 @@ function updateAuthUI() {
     const userEmail = document.getElementById('userEmail');
     const userRole = document.getElementById('userRole');
     const adminMenuLink = document.getElementById('adminMenuLink');
+    const cartSection = document.getElementById('cartSection');
 
     if (currentUser && authToken) {
-        // Hide login, show user info
-        loginSection.classList.add('d-none');
-        userSection.classList.remove('d-none');
+        if (loginSection) loginSection.classList.add('d-none');
+        if (userSection) userSection.classList.remove('d-none');
         
-        // Update user info
         userAvatar.src = currentUser.avatarUrl || 'https://via.placeholder.com/32x32/6c757d/ffffff?text=U';
         userName.textContent = currentUser.fullName || 'User';
         userEmail.textContent = currentUser.email || '';
         
-        // Update role badge
         userRole.textContent = currentUser.role || 'Customer';
         userRole.className = `badge ms-2 ${currentUser.role === 'Admin' ? 'bg-danger' : 'bg-primary'}`;
         
-        // Show/hide admin menu
-        if (currentUser.role === 'Admin') {
-            adminMenuLink.style.display = 'block';
-        } else {
-            adminMenuLink.style.display = 'none';
+        if (adminMenuLink) {
+            adminMenuLink.style.display = currentUser.role === 'Admin' ? 'block' : 'none';
+        }
+        
+        if (cartSection) {
+            cartSection.style.display = currentUser.role === 'Customer' ? 'block' : 'none';
+        }
+        if (currentUser.role === 'Customer') {
+            loadCart();
         }
         
     } else {
         showLoginSection();
+        if (cartSection) {
+            cartSection.style.display = 'none';
+        }
     }
 }
 
@@ -1367,27 +1500,26 @@ function showLoginSection() {
     const loginSection = document.getElementById('loginSection');
     const userSection = document.getElementById('userSection');
     
-    loginSection.classList.remove('d-none');
-    userSection.classList.add('d-none');
+    if (loginSection) loginSection.classList.remove('d-none');
+    if (userSection) userSection.classList.add('d-none');
 }
 
 function logout() {
-    // Clear auth data
     authToken = null;
     currentUser = null;
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
     
-    // Update UI
     showLoginSection();
     
-    // Sign out from Google
     if (typeof google !== 'undefined') {
         google.accounts.id.disableAutoSelect();
     }
     
     showNotification('Đăng xuất thành công', 'info');
     console.log('User logged out');
+    
+    window.location.href = 'index_user.html'; // Default to user page after logout
 }
 
 function showProfile() {
@@ -1397,7 +1529,6 @@ function showProfile() {
     }
     
     alert(`Profile:\nTên: ${currentUser.fullName}\nEmail: ${currentUser.email}\nRole: ${currentUser.role}`);
-    // TODO: Tạo modal profile chi tiết
 }
 
 function showAdminPanel() {
@@ -1407,10 +1538,8 @@ function showAdminPanel() {
     }
     
     alert('Admin Panel - Sẽ phát triển sau!');
-    // TODO: Tạo admin panel
 }
 
-// Helper function to make authenticated API calls
 async function makeAuthenticatedRequest(url, options = {}) {
     if (!authToken) {
         throw new Error('Not authenticated');
@@ -1428,8 +1557,12 @@ async function makeAuthenticatedRequest(url, options = {}) {
     });
 }
 
-// Test admin endpoint
 async function testAdminEndpoint() {
+    if (!currentUser || currentUser.role !== 'Admin') {
+        showNotification('Chỉ Admin mới truy cập được', 'error');
+        return;
+    }
+    
     try {
         const response = await makeAuthenticatedRequest(`${API_BASE_URL.replace('/BookApi', '')}/auth/admin-test`);
         const result = await response.json();
@@ -1456,4 +1589,211 @@ function forceShowLoginButton() {
         userSection.classList.add('d-none');
         console.log('User section hidden');
     }
+}
+
+async function addToCart(bookId, quantity = 1) {
+    // Bỏ kiểm tra authToken và currentUser tạm thời
+    try {
+        const response = await fetch(`${API_BASE_URL.replace('/BookApi', '')}/api/cart/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ BookId: bookId, Quantity: quantity })
+        });
+
+        const result = await response.json();
+
+        if (result.Success) {
+            showNotification(result.Message, 'success');
+            updateCartCount(result.TotalCartItems);
+        } else {
+            showNotification(result.Message, 'error');
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        showNotification('Lỗi khi thêm vào giỏ hàng', 'error');
+    }
+}
+
+async function loadCart() {
+    if (!currentUser || currentUser.role !== 'Customer') return;
+    if (!authToken) return;
+
+    try {
+        const response = await makeAuthenticatedRequest(`${API_BASE_URL.replace('/BookApi', '')}/api/cart`);
+        const result = await response.json();
+
+        if (result.Success) {
+            displayCart(result);
+            updateCartCount(result.TotalItems);
+        }
+    } catch (error) {
+        console.error('Error loading cart:', error);
+    }
+}
+
+async function updateCartItemQuantity(cartItemId, quantity) {
+    if (!currentUser || currentUser.role !== 'Customer') return;
+    
+    try {
+        const response = await makeAuthenticatedRequest(`${API_BASE_URL.replace('/BookApi', '')}/api/cart/update`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                CartItemId: cartItemId,
+                Quantity: quantity
+            })
+        });
+
+        const result = await response.json();
+        if (result.Success) {
+            loadCart();
+            showNotification(result.Message, 'success');
+        } else {
+            showNotification(result.Message, 'error');
+        }
+    } catch (error) {
+        console.error('Error updating cart:', error);
+        showNotification('Lỗi khi cập nhật giỏ hàng', 'error');
+    }
+}
+
+async function removeFromCart(cartItemId) {
+    if (!currentUser || currentUser.role !== 'Customer') return;
+    
+    try {
+        const response = await makeAuthenticatedRequest(`${API_BASE_URL.replace('/BookApi', '')}/api/cart/remove/${cartItemId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.Success) {
+            loadCart();
+            showNotification(result.Message, 'success');
+        } else {
+            showNotification(result.Message, 'error');
+        }
+    } catch (error) {
+        console.error('Error removing from cart:', error);
+        showNotification('Lỗi khi xóa khỏi giỏ hàng', 'error');
+    }
+}
+
+async function clearCart() {
+    if (!currentUser || currentUser.role !== 'Customer') return;
+    
+    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng?')) return;
+    
+    try {
+        const response = await makeAuthenticatedRequest(`${API_BASE_URL.replace('/BookApi', '')}/api/cart/clear`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+        if (result.Success) {
+            loadCart();
+            showNotification(result.Message, 'success');
+        } else {
+            showNotification(result.Message, 'error');
+        }
+    } catch (error) {
+        console.error('Error clearing cart:', error);
+        showNotification('Lỗi khi xóa giỏ hàng', 'error');
+    }
+}
+
+function updateCartCount(count) {
+    const cartBadge = document.getElementById('cartCount');
+    const cartSection = document.getElementById('cartSection');
+    
+    if (cartBadge) {
+        cartBadge.textContent = count || 0;
+        cartBadge.style.display = count > 0 ? 'inline' : 'none';
+    }
+    
+    if (cartSection && currentUser) {
+        cartSection.style.display = currentUser.role === 'Customer' ? 'block' : 'none';
+    }
+}
+
+function displayCart(cartData) {
+    if (!currentUser || currentUser.role !== 'Customer') return;
+    
+    const cartModal = document.getElementById('cartModal');
+    const cartItemsContainer = document.getElementById('cartItemsContainer');
+    const cartTotalAmount = document.getElementById('cartTotalAmount');
+    const cartTotalItems = document.getElementById('cartTotalItems');
+    
+    if (!cartItemsContainer) return;
+    
+    cartItemsContainer.innerHTML = '';
+    
+    if (cartData.Items.length === 0) {
+        cartItemsContainer.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-cart-x display-1 text-muted"></i>
+                <h5 class="mt-3">Giỏ hàng trống</h5>
+                <p class="text-muted">Thêm sách vào giỏ hàng để bắt đầu mua sắm</p>
+            </div>
+        `;
+    } else {
+        cartData.Items.forEach(item => {
+            cartItemsContainer.innerHTML += `
+                <div class="row align-items-center border-bottom py-3" id="cart-item-${item.Id}">
+                    <div class="col-md-2">
+                        <img src="${item.BookCoverImg || 'https://via.placeholder.com/80x100'}" 
+                             class="img-fluid rounded" 
+                             alt="${item.BookTitle}"
+                             style="max-height: 80px;">
+                    </div>
+                    <div class="col-md-5">
+                        <h6 class="mb-1">${item.BookTitle}</h6>
+                        <small class="text-muted">${item.BookAuthor}</small>
+                    </div>
+                    <div class="col-md-2">
+                        <strong>$${item.BookPrice.toFixed(2)}</strong>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="input-group input-group-sm">
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    onclick="updateCartItemQuantity(${item.Id}, ${item.Quantity - 1})"
+                                    ${item.Quantity <= 1 ? 'disabled' : ''}>-</button>
+                            <input type="text" class="form-control text-center" value="${item.Quantity}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    onclick="updateCartItemQuantity(${item.Id}, ${item.Quantity + 1})"
+                                    ${item.Quantity >= 99 ? 'disabled' : ''}>+</button>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="removeFromCart(${item.Id})"
+                                title="Xóa">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    if (cartTotalAmount) cartTotalAmount.textContent = `$${cartData.TotalAmount.toFixed(2)}`;
+    if (cartTotalItems) cartTotalItems.textContent = cartData.TotalItems;
+}
+
+function showCart() {
+    if (!currentUser || currentUser.role !== 'Customer') {
+        showNotification('Chỉ Customer mới có thể xem giỏ hàng', 'error');
+        return;
+    }
+    
+    loadCart();
+    const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+    if (cartModal) cartModal.show();
+}
+
+function proceedToCheckout() {
+    if (!currentUser || currentUser.role !== 'Customer') {
+        showNotification('Chỉ Customer mới có thể thanh toán', 'error');
+        return;
+    }
+    
+    alert('Chức năng thanh toán đang phát triển!');
 }
