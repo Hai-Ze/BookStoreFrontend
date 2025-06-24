@@ -1,0 +1,34 @@
+/* Admin Dashboard Styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 250px;
+    z-index: 1000;
+}
+
+.main-content {
+    margin-left: 250px;
+    padding: 20px;
+}
+
+.sidebar .nav-link:hover {
+    background: #495057;
+}
+
+.bg-darker {
+    background-color: #212529 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+    
+    .main-content {
+        margin-left: 200px;
+        padding: 15px;
+    }
+}

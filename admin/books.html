@@ -6,84 +6,138 @@
     <title>Quản lý sách - Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet">
+    <link href="../css/admin.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Header -->
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/admin/index.html">📚 BookStore Admin</a>
-            <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+    <!-- Access Denied Screen -->
+    <div id="accessDenied" class="d-none">
+        <div class="container d-flex justify-content-center align-items-center min-vh-100">
+            <div class="card text-center" style="max-width: 500px;">
+                <div class="card-body">
+                    <i class="bi bi-shield-exclamation display-1 text-danger"></i>
+                    <h3 class="text-danger">Không có quyền truy cập!</h3>
+                    <p class="text-muted">Chỉ Admin mới có thể quản lý sách.</p>
+                    <div id="userDetails" class="alert alert-info"></div>
+                    <div class="d-grid gap-2">
+                        <a href="/user/index.html" class="btn btn-primary">Về User Dashboard</a>
+                        <a href="/auth/login.html" class="btn btn-outline-secondary">Đăng nhập lại</a>
+                    </div>
+                </div>
+            </div>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Quản lý sách</h2>
-            <button class="btn btn-success" onclick="showAddForm()">
-                <i class="bi bi-plus"></i> Thêm sách
-            </button>
-        </div>
-
-        <!-- Search -->
-        <input type="search" class="form-control mb-3" placeholder="Tìm kiếm..." id="searchInput">
-
-        <!-- Books Table -->
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Ảnh</th>
-                        <th>Tên sách</th>
-                        <th>Tác giả</th>
-                        <th>Giá</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="booksTable">
-                    <tr><td colspan="6" class="text-center">Đang tải...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination -->
-        <nav id="pagination"></nav>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <div class="modal fade" id="bookModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Thêm sách</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Main Content (only show if admin) -->
+    <div id="mainContent" class="d-none">
+        <!-- Header -->
+        <nav class="navbar navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/admin/index.html">
+                    <i class="bi bi-book"></i> BookStore Admin
+                </a>
+                <div class="d-flex align-items-center">
+                    <img id="userAvatar" src="" class="rounded-circle me-2" width="40" height="40">
+                    <span class="text-white me-3" id="userName">Admin</span>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="bookId">
-                    <div class="mb-3">
-                        <label>Tên sách *</label>
-                        <input type="text" class="form-control" id="title" required>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar - Direct HTML -->
+                <nav class="col-md-2 bg-light sidebar">
+                    <div class="position-sticky pt-3">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/index.html">
+                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" href="/admin/books.html">
+                                    <i class="bi bi-book"></i> Quản lý sách
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="mb-3">
-                        <label>Tác giả *</label>
-                        <input type="text" class="form-control" id="author" required>
+                </nav>
+
+                <!-- Main content -->
+                <main class="col-md-10 ms-sm-auto px-md-4">
+                    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+                        <h2>Quản lý sách</h2>
+                        <button class="btn btn-success" onclick="showAddForm()">
+                            <i class="bi bi-plus"></i> Thêm sách
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label>Giá *</label>
-                        <input type="number" class="form-control" id="price" step="0.01" required>
+
+                    <!-- Search -->
+                    <input type="search" class="form-control mb-3" placeholder="Tìm kiếm..." id="searchInput">
+
+                    <!-- Books Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Ảnh</th>
+                                    <th>Tên sách</th>
+                                    <th>Tác giả</th>
+                                    <th>Giá</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="booksTable">
+                                <tr><td colspan="6" class="text-center">Đang tải...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="mb-3">
-                        <label>URL Ảnh bìa</label>
-                        <input type="url" class="form-control" id="coverImg">
+
+                    <!-- Pagination -->
+                    <nav id="pagination"></nav>
+                </main>
+            </div>
+        </div>
+
+        <!-- Add/Edit Modal -->
+        <div class="modal fade" id="bookModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Thêm sách</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="mb-3">
-                        <label>Mô tả</label>
-                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    <div class="modal-body">
+                        <input type="hidden" id="bookId">
+                        <div class="mb-3">
+                            <label>Tên sách *</label>
+                            <input type="text" class="form-control" id="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Tác giả *</label>
+                            <input type="text" class="form-control" id="author" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Giá *</label>
+                            <input type="number" class="form-control" id="price" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>URL Ảnh bìa</label>
+                            <input type="url" class="form-control" id="coverImg">
+                        </div>
+                        <div class="mb-3">
+                            <label>Mô tả</label>
+                            <textarea class="form-control" id="description" rows="3"></textarea>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" onclick="saveBook()">Lưu</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-primary" onclick="saveBook()">Lưu</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -91,28 +145,63 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    //         if (!localStorage.getItem('authToken')) {
-    //     localStorage.setItem('authToken', 'fake-token-for-testing');
-    //     localStorage.setItem('currentUser', JSON.stringify({
-    //         id: 1,
-    //         email: 'admin@test.com',
-    //         fullName: 'Test Admin',
-    //         role: 'Admin', // Đổi thành 'Customer' nếu test User
-    //         avatarUrl: 'https://via.placeholder.com/40'
-    //     }));
-    // }
         const API_BASE = 'https://localhost:7288/api';
         let currentPage = 1;
         let isEditMode = false;
 
-        // Check auth
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        if (!user.role || user.role !== 'Admin') {
-            alert('Không có quyền!');
-            window.location.href = '/login.html';
+        // STRICT AUTH CHECK
+        function checkStrictAdminAuth() {
+            const userStr = localStorage.getItem('currentUser');
+            const token = localStorage.getItem('authToken');
+            
+            if (!userStr || !token) {
+                showAccessDenied('Chưa đăng nhập', 'Vui lòng đăng nhập để tiếp tục');
+                return false;
+            }
+
+            let user;
+            try {
+                user = JSON.parse(userStr);
+            } catch (e) {
+                showAccessDenied('Dữ liệu user không hợp lệ', 'Vui lòng đăng nhập lại');
+                return false;
+            }
+
+            const adminEmails = ['taodalat123@gmail.com', 'hoanghaizs73@gmail.com'];
+            const userEmail = (user.email || user.Email || '').toLowerCase();
+            const userRole = user.role || user.Role || '';
+            
+            if (!adminEmails.includes(userEmail) || userRole !== 'Admin') {
+                showAccessDenied(
+                    'Không có quyền Admin', 
+                    `Email: ${userEmail}<br>Role: ${userRole}<br>Chỉ admin mới quản lý được sách.`
+                );
+                return false;
+            }
+
+            return user;
         }
-        localStorage.setItem('authToken', 'fake-token-for-testing');
-        // Load books
+
+        function showAccessDenied(title, details) {
+            document.getElementById('userDetails').innerHTML = `<strong>${title}</strong><br>${details}`;
+            document.getElementById('accessDenied').classList.remove('d-none');
+            document.getElementById('mainContent').classList.add('d-none');
+        }
+
+        function showMainContent() {
+            document.getElementById('accessDenied').classList.add('d-none');
+            document.getElementById('mainContent').classList.remove('d-none');
+        }
+
+        function updateUserInfo() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const userName = user.fullName || user.FullName || user.email || 'Admin';
+            const userAvatar = user.avatarUrl || user.AvatarUrl || user.picture || 'https://via.placeholder.com/40';
+            
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('userAvatar').src = userAvatar;
+        }
+
         async function loadBooks(page = 1) {
             currentPage = page;
             try {
@@ -140,7 +229,6 @@
                 </tr>
             `).join('');
 
-            // Pagination
             const pagination = document.getElementById('pagination');
             pagination.innerHTML = `
                 <ul class="pagination">
@@ -237,7 +325,7 @@
 
         function logout() {
             localStorage.clear();
-            window.location.href = '/login.html';
+            window.location.href = '/auth/login.html';
         }
 
         // Search
@@ -255,8 +343,13 @@
             }, 300);
         });
 
-        // Load initial data
-        loadBooks();
+        // Initialize
+        const currentUser = checkStrictAdminAuth();
+        if (currentUser) {
+            showMainContent();
+            updateUserInfo();
+            loadBooks();
+        }
     </script>
 </body>
 </html>

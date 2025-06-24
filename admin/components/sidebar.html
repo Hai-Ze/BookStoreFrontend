@@ -1,0 +1,50 @@
+<!-- Admin Sidebar Component -->
+<nav class="col-md-2 bg-light sidebar">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/index.html" id="nav-dashboard">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/books.html" id="nav-books">
+                    <i class="bi bi-book"></i> Quản lý sách
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/users.html" id="nav-users">
+                    <i class="bi bi-people"></i> Quản lý Users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/settings.html" id="nav-settings">
+                    <i class="bi bi-gear"></i> Cài đặt
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<script>
+// Auto set active menu based on current page
+document.addEventListener('DOMContentLoaded', function() {
+    const currentPage = window.location.pathname;
+    
+    // Remove all active classes
+    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Set active based on current page
+    if (currentPage.includes('index.html') || currentPage.endsWith('/admin/')) {
+        document.getElementById('nav-dashboard').classList.add('active');
+    } else if (currentPage.includes('books.html')) {
+        document.getElementById('nav-books').classList.add('active');
+    } else if (currentPage.includes('users.html')) {
+        document.getElementById('nav-users').classList.add('active');
+    } else if (currentPage.includes('settings.html')) {
+        document.getElementById('nav-settings').classList.add('active');
+    }
+});
+</script>
