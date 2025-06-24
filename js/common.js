@@ -1,24 +1,29 @@
-// Supabase Configuration
-const SUPABASE_URL = 'https://kajpxaorxhrmwwgpieaz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImthanB4YW9yeGhybXd3Z3BpZWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQxNjc0NzQsImV4cCI6MjA0OTc0MzQ3NH0.Tb4yRzWFXFYUqKACQ5RdOo6i8xJhfpfFWYJyJRQ-YdU';
+// Common functions with fixed API configuration
 
-// Initialize Supabase (assuming Supabase JS is loaded)
-let supabase;
-if (typeof window !== 'undefined' && window.supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// API Configuration - SỬA URL CHO ĐÚNG
+const API_BASE = 'https://localhost:7288/api'; // URL backend
+
+// Kiểm tra nếu đang ở localhost khác
+if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+    // Có thể backend đang chạy ở port khác
+    console.log('Detected localhost, using API_BASE:', API_BASE);
 }
 
 // Auth Functions
 function checkAuth() {
     const user = localStorage.getItem('currentUser');
+    const token = localStorage.getItem('authToken');
     
-    if (!user) {
+    if (!user || !token) {
+        console.log('No auth data found, redirecting to login');
         window.location.href = '/auth/login.html';
         return null;
     }
     
     try {
-        return JSON.parse(user);
+        const parsedUser = JSON.parse(user);
+        console.log('Current user:', parsedUser);
+        return parsedUser;
     } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.clear();
@@ -29,7 +34,7 @@ function checkAuth() {
 
 function checkAdminAuth() {
     const user = checkAuth();
-    if (user && user.role !== 'Admin') {
+    if (user && user.role !== 'Admin' && user.Role !== 'Admin') {
         alert('Không có quyền truy cập!');
         window.location.href = '/user/index.html';
         return null;
@@ -39,11 +44,6 @@ function checkAdminAuth() {
 
 async function logout() {
     try {
-        // Sign out từ Supabase
-        if (supabase) {
-            await supabase.auth.signOut();
-        }
-        
         // Clear localStorage
         localStorage.clear();
         
@@ -57,85 +57,52 @@ async function logout() {
     }
 }
 
-// Supabase API Helper
-async function supabaseCall(table, operation, options = {}) {
-    if (!supabase) {
-        throw new Error('Supabase not initialized');
-    }
-
-    try {
-        let query = supabase.from(table);
-        
-        switch (operation) {
-            case 'select':
-                query = query.select(options.select || '*');
-                if (options.eq) {
-                    query = query.eq(options.eq.column, options.eq.value);
-                }
-                if (options.range) {
-                    query = query.range(options.range.from, options.range.to);
-                }
-                if (options.order) {
-                    query = query.order(options.order.column, { ascending: options.order.ascending !== false });
-                }
-                if (options.limit) {
-                    query = query.limit(options.limit);
-                }
-                break;
-                
-            case 'insert':
-                query = query.insert(options.data);
-                break;
-                
-            case 'update':
-                query = query.update(options.data);
-                if (options.eq) {
-                    query = query.eq(options.eq.column, options.eq.value);
-                }
-                break;
-                
-            case 'delete':
-                if (options.eq) {
-                    query = query.delete().eq(options.eq.column, options.eq.value);
-                }
-                break;
-        }
-
-        const { data, error } = await query;
-        
-        if (error) {
-            throw error;
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('Supabase call error:', error);
-        throw error;
-    }
-}
-
-// Legacy API Helper (để backward compatibility với book API)
+// API Helper with better error handling
 async function apiCall(endpoint, options = {}) {
     const token = localStorage.getItem('authToken');
     
     const config = {
+        method: 'GET',
         ...options,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : '',
             ...options.headers
         }
     };
+
+    // Add Authorization header if token exists
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+    }
     
     try {
-        const API_BASE = 'https://localhost:7288/api';
+        console.log(`Making API call to: ${API_BASE}${endpoint}`);
+        console.log('Config:', config);
+        
         const response = await fetch(`${API_BASE}${endpoint}`, config);
         
+        console.log(`API Response status: ${response.status}`);
+        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Handle different error status codes
+            if (response.status === 401) {
+                console.warn('Unauthorized - token may be expired');
+                // Don't auto-logout here, let the calling function handle it
+                throw new Error(`Unauthorized (401): Token may be expired`);
+            } else if (response.status === 403) {
+                throw new Error(`Forbidden (403): Access denied`);
+            } else if (response.status === 404) {
+                throw new Error(`Not Found (404): ${endpoint}`);
+            } else if (response.status === 500) {
+                throw new Error(`Server Error (500): Internal server error`);
+            } else {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
         }
         
         const data = await response.json();
+        console.log('API Response data:', data);
         return data;
     } catch (error) {
         console.error('API Error:', error);
@@ -147,92 +114,164 @@ async function apiCall(endpoint, options = {}) {
 function showLoading(elementId, show = true) {
     const el = document.getElementById(elementId);
     if (el) {
-        el.innerHTML = show ? '<div class="spinner-border" role="status"></div>' : '';
+        if (show) {
+            el.innerHTML = `
+                <div class="d-flex justify-content-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            el.innerHTML = '';
+        }
     }
 }
 
 function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert.position-fixed');
+    existingAlerts.forEach(alert => alert.remove());
+
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-    alertDiv.style.zIndex = '9999';
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = `
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 500px;
+    `;
     alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
+    
     document.body.appendChild(alertDiv);
-    setTimeout(() => alertDiv.remove(), 5000);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv && alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }
 
 // Format helpers
 function formatPrice(price) {
-    return `$${parseFloat(price || 0).toFixed(2)}`;
+    const numPrice = parseFloat(price || 0);
+    return `$${numPrice.toFixed(2)}`;
 }
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    try {
+        return new Date(dateString).toLocaleDateString('vi-VN');
+    } catch (error) {
+        return 'Invalid Date';
+    }
 }
 
 // Update header user info
 function updateUserInfo() {
-    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    const userNameEl = document.getElementById('userName');
-    const userAvatarEl = document.getElementById('userAvatar');
-    
-    if (userNameEl) userNameEl.textContent = user.full_name || user.fullName || 'User';
-    if (userAvatarEl) userAvatarEl.src = user.avatar_url || user.avatarUrl || 'https://via.placeholder.com/40';
+    const userStr = localStorage.getItem('currentUser');
+    if (!userStr) return;
+
+    try {
+        const user = JSON.parse(userStr);
+        const userNameEl = document.getElementById('userName');
+        const userAvatarEl = document.getElementById('userAvatar');
+        
+        if (userNameEl) {
+            userNameEl.textContent = user.FullName || user.fullName || user.name || user.email || 'User';
+        }
+        
+        if (userAvatarEl) {
+            userAvatarEl.src = user.AvatarUrl || user.avatarUrl || user.picture || 'https://via.placeholder.com/40';
+        }
+        
+        console.log('Updated user info:', {
+            name: user.FullName || user.fullName || user.name,
+            avatar: user.AvatarUrl || user.avatarUrl || user.picture
+        });
+    } catch (error) {
+        console.error('Error updating user info:', error);
+    }
 }
 
-// Supabase Auth State Listener
-function initAuthListener() {
-    if (supabase) {
-        supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('Auth state changed:', event);
-            
-            if (event === 'SIGNED_OUT') {
-                localStorage.clear();
-                if (window.location.pathname !== '/auth/login.html') {
-                    window.location.href = '/auth/login.html';
-                }
-            } else if (event === 'SIGNED_IN' && session) {
-                // Cập nhật user info từ database
-                try {
-                    const userData = await supabaseCall('users', 'select', {
-                        eq: { column: 'id', value: session.user.id }
-                    });
-                    
-                    if (userData && userData[0]) {
-                        localStorage.setItem('currentUser', JSON.stringify(userData[0]));
-                        localStorage.setItem('authToken', session.access_token);
-                        updateUserInfo();
-                    }
-                } catch (error) {
-                    console.error('Error fetching user data:', error);
-                }
+// Debug function to test API connection
+async function testAPIConnection() {
+    try {
+        console.log('Testing API connection...');
+        const response = await fetch(`${API_BASE}/BookApi/quick-stats`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ API connection successful:', data);
+            showAlert('API connection successful!', 'success');
+        } else {
+            console.log('❌ API connection failed:', response.status);
+            showAlert(`API connection failed: ${response.status}`, 'danger');
+        }
+    } catch (error) {
+        console.error('❌ API connection error:', error);
+        showAlert(`API connection error: ${error.message}`, 'danger');
+    }
+}
+
+// Debug function to test auth
+async function testAuth() {
+    try {
+        const token = localStorage.getItem('authToken');
+        console.log('Testing auth...');
+        console.log('Token exists:', !!token);
+        
+        if (!token) {
+            showAlert('No auth token found', 'warning');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE}/auth/verify`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
         });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Auth token valid:', data);
+            showAlert('Auth token is valid!', 'success');
+        } else {
+            console.log('❌ Auth token invalid:', response.status);
+            showAlert(`Auth token invalid: ${response.status}`, 'danger');
+        }
+    } catch (error) {
+        console.error('❌ Auth test error:', error);
+        showAlert(`Auth test error: ${error.message}`, 'danger');
     }
 }
 
 // Initialize when DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize auth listener
-    initAuthListener();
-    
     // Update user info if logged in
     const user = localStorage.getItem('currentUser');
     if (user) {
         updateUserInfo();
     }
+
+    console.log('Common.js initialized');
+    console.log('API Base:', API_BASE);
+    console.log('Current user:', localStorage.getItem('currentUser'));
+    console.log('Auth token exists:', !!localStorage.getItem('authToken'));
 });
 
-// Load Supabase JS if not already loaded
-if (typeof window !== 'undefined' && !window.supabase) {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    script.onload = () => {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        initAuthListener();
-    };
-    document.head.appendChild(script);
-}
+// Make functions globally available
+window.testAPIConnection = testAPIConnection;
+window.testAuth = testAuth;
+window.showAlert = showAlert;
+window.apiCall = apiCall;
+window.checkAuth = checkAuth;
+window.logout = logout;
+window.updateUserInfo = updateUserInfo;

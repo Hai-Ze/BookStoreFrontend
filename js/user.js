@@ -89,29 +89,126 @@ async function showBookDetail(bookId) {
     }
 }
 
-// Cart functions
+// Cart functions - FIXED VERSION với absolute URLs
 async function quickAddToCart(bookId) {
     try {
-        const result = await apiCall('/cart/add', {
-            method: 'POST',
-            body: JSON.stringify({ BookId: bookId, Quantity: 1 })
-        });
+        console.log('Adding to cart, BookId:', bookId);
         
-        if (result.Success) {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            showAlert('Vui lòng đăng nhập để thêm vào giỏ hàng', 'warning');
+            return;
+        }
+
+        // Sử dụng absolute URL từ API_BASE
+        const API_BASE = 'https://localhost:7288/api';
+        
+        // Debug: Test token first
+        try {
+            const debugResult = await fetch(`${API_BASE}/cart/debug-user`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (debugResult.ok) {
+                const debugData = await debugResult.json();
+                console.log('Debug user info:', debugData);
+            } else {
+                console.warn('Debug endpoint failed:', debugResult.status);
+            }
+        } catch (debugError) {
+            console.warn('Debug request failed:', debugError);
+        }
+
+        // Make the actual add to cart request
+        console.log(`Making request to: ${API_BASE}/cart/add`);
+        
+        const response = await fetch(`${API_BASE}/cart/add`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                BookId: bookId, 
+                Quantity: 1 
+            })
+        });
+
+        console.log('Add to cart response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Add to cart error response:', errorText);
+            
+            if (response.status === 405) {
+                throw new Error(`Method Not Allowed (405): POST method not supported on ${API_BASE}/cart/add`);
+            } else {
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+        }
+
+        const result = await response.json();
+        console.log('Add to cart result:', result);
+
+        if (result.Success || result.success) {
             showAlert('Đã thêm vào giỏ hàng!', 'success');
             updateCartCount();
+        } else {
+            throw new Error(result.Message || result.message || 'Không thể thêm vào giỏ hàng');
         }
     } catch (error) {
-        showAlert('Lỗi thêm vào giỏ', 'danger');
+        console.error('Error adding to cart:', error);
+        
+        // Handle specific error cases
+        if (error.message.includes('405')) {
+            showAlert('Lỗi API: Method not allowed. Kiểm tra backend cart endpoint.', 'danger');
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+        } else if (error.message.includes('400')) {
+            showAlert('Dữ liệu không hợp lệ. Vui lòng thử lại.', 'danger');
+        } else if (error.message.includes('500')) {
+            showAlert('Lỗi server. Vui lòng thử lại sau.', 'danger');
+        } else {
+            showAlert('Lỗi khi thêm vào giỏ hàng: ' + error.message, 'danger');
+        }
     }
 }
 
 async function updateCartCount() {
     try {
-        const result = await apiCall('/cart/count');
-        document.getElementById('cartCount').textContent = result.Count || 0;
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            document.getElementById('cartCount').textContent = '0';
+            return;
+        }
+
+        const API_BASE = 'https://localhost:7288/api';
+        
+        const response = await fetch(`${API_BASE}/cart/count`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            const count = result.Count || result.count || 0;
+            document.getElementById('cartCount').textContent = count;
+            console.log('Updated cart count:', count);
+        } else {
+            console.warn('Failed to update cart count:', response.status);
+            document.getElementById('cartCount').textContent = '0';
+        }
     } catch (error) {
-        console.error('Error updating cart count');
+        console.error('Error updating cart count:', error);
+        document.getElementById('cartCount').textContent = '0';
     }
 }
 
@@ -145,6 +242,39 @@ function debounce(func, wait) {
     };
 }
 
+// Test auth function
+async function testAuth() {
+    try {
+        const token = localStorage.getItem('authToken');
+        console.log('Token:', token ? 'Present' : 'Missing');
+        
+        if (!token) {
+            console.log('No token found');
+            return;
+        }
+
+        const response = await fetch('/api/auth/verify', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+        console.log('Auth verify result:', result);
+
+        if (response.ok && result.Success) {
+            console.log('✅ Auth token is valid');
+            console.log('User info:', result.User);
+        } else {
+            console.log('❌ Auth token is invalid');
+        }
+    } catch (error) {
+        console.error('Auth test error:', error);
+    }
+}
+
 // Add to cart from modal
 document.getElementById('addToCartBtn')?.addEventListener('click', () => {
     if (currentBookId) {
@@ -152,3 +282,130 @@ document.getElementById('addToCartBtn')?.addEventListener('click', () => {
         bootstrap.Modal.getInstance(document.getElementById('bookModal')).hide();
     }
 });
+
+// Test cart API endpoints
+async function testCartAPI() {
+    const API_BASE = 'https://localhost:7288/api';
+    const token = localStorage.getItem('authToken');
+    
+    console.log('=== Testing Cart API Endpoints ===');
+    
+    if (!token) {
+        console.error('❌ No auth token found');
+        showAlert('No auth token found', 'danger');
+        return;
+    }
+    
+    // Test endpoints
+    const endpoints = [
+        { url: `${API_BASE}/cart/debug-user`, method: 'GET' },
+        { url: `${API_BASE}/cart/count`, method: 'GET' },
+        { url: `${API_BASE}/cart`, method: 'GET' }
+    ];
+    
+    for (const endpoint of endpoints) {
+        try {
+            console.log(`Testing ${endpoint.method} ${endpoint.url}`);
+            
+            const response = await fetch(endpoint.url, {
+                method: endpoint.method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log(`✅ ${endpoint.method} ${endpoint.url} - Status: ${response.status}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Response:', data);
+            } else {
+                const errorText = await response.text();
+                console.log('Error:', errorText);
+            }
+        } catch (error) {
+            console.error(`❌ ${endpoint.method} ${endpoint.url} - Error:`, error);
+        }
+        
+        // Delay between requests
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Test POST add to cart with a sample book ID
+    try {
+        console.log('Testing POST /cart/add');
+        
+        const response = await fetch(`${API_BASE}/cart/add`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ BookId: 1, Quantity: 1 })
+        });
+        
+        console.log(`✅ POST /cart/add - Status: ${response.status}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Add to cart response:', data);
+            showAlert('Cart API test completed successfully!', 'success');
+        } else {
+            const errorText = await response.text();
+            console.log('Add to cart error:', errorText);
+            
+            if (response.status === 405) {
+                showAlert('❌ Method Not Allowed - Cart endpoint không hỗ trợ POST', 'danger');
+            } else {
+                showAlert(`❌ Cart API test failed: ${response.status}`, 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('❌ POST /cart/add - Error:', error);
+        showAlert('❌ Cart API connection failed', 'danger');
+    }
+}
+
+// Test backend connection
+async function testBackendConnection() {
+    const API_BASE = 'https://localhost:7288/api';
+    
+    console.log('=== Testing Backend Connection ===');
+    
+    const testEndpoints = [
+        `${API_BASE}/BookApi/quick-stats`,
+        `${API_BASE}/auth/verify`,
+        `https://localhost:7288/`, // Root endpoint
+        `https://localhost:7288/swagger` // Swagger endpoint
+    ];
+    
+    for (const url of testEndpoints) {
+        try {
+            console.log(`Testing: ${url}`);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            console.log(`✅ ${url} - Status: ${response.status}`);
+            
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    console.log('Response:', data);
+                } else {
+                    console.log('Non-JSON response received');
+                }
+            }
+        } catch (error) {
+            console.error(`❌ ${url} - Error:`, error);
+        }
+    }
+    
+    showAlert('Backend connection test completed - check console', 'info');
+}
