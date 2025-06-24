@@ -89,92 +89,124 @@ async function showBookDetail(bookId) {
     }
 }
 
+function animateAddToCart(bookId) {
+    // Tìm element của sách
+    const bookElement = document.querySelector(`[onclick*="quickAddToCart(${bookId})"]`);
+    if (bookElement) {
+        bookElement.classList.add('pulse-animation');
+        setTimeout(() => {
+            bookElement.classList.remove('pulse-animation');
+        }, 600);
+    }
+}
+
 // Cart functions - FIXED VERSION với absolute URLs
 async function quickAddToCart(bookId) {
     try {
-        console.log('Adding to cart, BookId:', bookId);
+        console.log('=== Starting Add to Cart ===');
+        console.log('BookId:', bookId);
         
         const token = localStorage.getItem('authToken');
         if (!token) {
             showAlert('Vui lòng đăng nhập để thêm vào giỏ hàng', 'warning');
+            setTimeout(() => {
+                window.location.href = '/auth/login.html';
+            }, 2000);
             return;
         }
 
-        // Sử dụng absolute URL từ API_BASE
+        // API Configuration
         const API_BASE = 'https://localhost:7288/api';
         
-        // Debug: Test token first
-        try {
-            const debugResult = await fetch(`${API_BASE}/cart/debug-user`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (debugResult.ok) {
-                const debugData = await debugResult.json();
-                console.log('Debug user info:', debugData);
-            } else {
-                console.warn('Debug endpoint failed:', debugResult.status);
-            }
-        } catch (debugError) {
-            console.warn('Debug request failed:', debugError);
+        // Validate bookId
+        if (!bookId || isNaN(bookId)) {
+            showAlert('ID sách không hợp lệ', 'danger');
+            return;
         }
 
-        // Make the actual add to cart request
-        console.log(`Making request to: ${API_BASE}/cart/add`);
-        
+        // Prepare request body
+        const requestBody = {
+            BookId: parseInt(bookId),
+            Quantity: 1
+        };
+
+        console.log('Request URL:', `${API_BASE}/cart/add`);
+        console.log('Request Body:', JSON.stringify(requestBody));
+        console.log('Authorization:', `Bearer ${token.substring(0, 20)}...`);
+
+        // Make the request
         const response = await fetch(`${API_BASE}/cart/add`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({ 
-                BookId: bookId, 
-                Quantity: 1 
-            })
+            body: JSON.stringify(requestBody),
+            credentials: 'include' // Include cookies if any
         });
 
-        console.log('Add to cart response status:', response.status);
-        console.log('Response headers:', [...response.headers.entries()]);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Add to cart error response:', errorText);
-            
-            if (response.status === 405) {
-                throw new Error(`Method Not Allowed (405): POST method not supported on ${API_BASE}/cart/add`);
-            } else {
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
+        console.log('Response Status:', response.status);
+        console.log('Response Headers:', [...response.headers.entries()]);
+
+        // Handle response based on status
+        if (response.status === 401) {
+            // Unauthorized - token expired or invalid
+            showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            setTimeout(() => {
+                window.location.href = '/auth/login.html';
+            }, 2000);
+            return;
         }
 
+        if (response.status === 404) {
+            showAlert('Không tìm thấy API endpoint. Kiểm tra backend.', 'danger');
+            return;
+        }
+
+        if (response.status === 405) {
+            showAlert('Method not allowed. Backend không hỗ trợ POST cho endpoint này.', 'danger');
+            console.error('405 Error - Check if CartController is properly configured');
+            return;
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        // Parse successful response
         const result = await response.json();
         console.log('Add to cart result:', result);
 
         if (result.Success || result.success) {
-            showAlert('Đã thêm vào giỏ hàng!', 'success');
-            updateCartCount();
+            showAlert(result.Message || 'Đã thêm vào giỏ hàng!', 'success');
+            
+            // Update cart count
+            await updateCartCount();
+            
+            // Optional: Show cart preview or animation
+            animateAddToCart(bookId);
         } else {
-            throw new Error(result.Message || result.message || 'Không thể thêm vào giỏ hàng');
+            showAlert(result.Message || result.message || 'Không thể thêm vào giỏ hàng', 'warning');
         }
+
     } catch (error) {
-        console.error('Error adding to cart:', error);
+        console.error('=== Add to Cart Error ===');
+        console.error('Error:', error);
         
-        // Handle specific error cases
-        if (error.message.includes('405')) {
-            showAlert('Lỗi API: Method not allowed. Kiểm tra backend cart endpoint.', 'danger');
-        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-            showAlert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning');
-        } else if (error.message.includes('400')) {
-            showAlert('Dữ liệu không hợp lệ. Vui lòng thử lại.', 'danger');
-        } else if (error.message.includes('500')) {
-            showAlert('Lỗi server. Vui lòng thử lại sau.', 'danger');
+        // Handle different error types
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            showAlert('Không thể kết nối đến server. Kiểm tra backend đang chạy ở https://localhost:7288', 'danger');
+        } else if (error.message.includes('405')) {
+            showAlert('Lỗi 405: API endpoint không hỗ trợ POST method', 'danger');
+        } else if (error.message.includes('404')) {
+            showAlert('Lỗi 404: Không tìm thấy API endpoint', 'danger');
         } else {
-            showAlert('Lỗi khi thêm vào giỏ hàng: ' + error.message, 'danger');
+            showAlert('Lỗi: ' + error.message, 'danger');
         }
     }
 }
@@ -193,15 +225,19 @@ async function updateCartCount() {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+                'Accept': 'application/json'
+            },
+            credentials: 'include'
         });
 
         if (response.ok) {
             const result = await response.json();
             const count = result.Count || result.count || 0;
             document.getElementById('cartCount').textContent = count;
-            console.log('Updated cart count:', count);
+            console.log('Cart count updated:', count);
+        } else if (response.status === 401) {
+            // Silently set to 0 if unauthorized
+            document.getElementById('cartCount').textContent = '0';
         } else {
             console.warn('Failed to update cart count:', response.status);
             document.getElementById('cartCount').textContent = '0';
@@ -289,82 +325,102 @@ async function testCartAPI() {
     const token = localStorage.getItem('authToken');
     
     console.log('=== Testing Cart API Endpoints ===');
+    console.log('Token exists:', !!token);
     
     if (!token) {
-        console.error('❌ No auth token found');
-        showAlert('No auth token found', 'danger');
+        showAlert('Không có token. Vui lòng đăng nhập trước.', 'warning');
         return;
     }
     
-    // Test endpoints
-    const endpoints = [
-        { url: `${API_BASE}/cart/debug-user`, method: 'GET' },
-        { url: `${API_BASE}/cart/count`, method: 'GET' },
-        { url: `${API_BASE}/cart`, method: 'GET' }
-    ];
-    
-    for (const endpoint of endpoints) {
-        try {
-            console.log(`Testing ${endpoint.method} ${endpoint.url}`);
-            
-            const response = await fetch(endpoint.url, {
-                method: endpoint.method,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            console.log(`✅ ${endpoint.method} ${endpoint.url} - Status: ${response.status}`);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Response:', data);
-            } else {
-                const errorText = await response.text();
-                console.log('Error:', errorText);
-            }
-        } catch (error) {
-            console.error(`❌ ${endpoint.method} ${endpoint.url} - Error:`, error);
+    // Test 1: Test basic endpoint
+    try {
+        console.log('\n1. Testing GET /api/cart/test');
+        const testResponse = await fetch(`${API_BASE}/cart/test`, {
+            method: 'GET'
+        });
+        console.log('Test endpoint status:', testResponse.status);
+        if (testResponse.ok) {
+            const testData = await testResponse.json();
+            console.log('Test endpoint response:', testData);
         }
-        
-        // Delay between requests
-        await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+        console.error('Test endpoint error:', error);
     }
     
-    // Test POST add to cart with a sample book ID
+    // Test 2: Debug user info
     try {
-        console.log('Testing POST /cart/add');
-        
-        const response = await fetch(`${API_BASE}/cart/add`, {
+        console.log('\n2. Testing GET /api/cart/debug-user');
+        const debugResponse = await fetch(`${API_BASE}/cart/debug-user`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+        console.log('Debug user status:', debugResponse.status);
+        if (debugResponse.ok) {
+            const debugData = await debugResponse.json();
+            console.log('User debug info:', debugData);
+            console.log('User ID:', debugData.UserId);
+            console.log('Claims:', debugData.Claims);
+        }
+    } catch (error) {
+        console.error('Debug user error:', error);
+    }
+    
+    // Test 3: Get cart count
+    try {
+        console.log('\n3. Testing GET /api/cart/count');
+        const countResponse = await fetch(`${API_BASE}/cart/count`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+        console.log('Cart count status:', countResponse.status);
+        if (countResponse.ok) {
+            const countData = await countResponse.json();
+            console.log('Cart count:', countData);
+        }
+    } catch (error) {
+        console.error('Cart count error:', error);
+    }
+    
+    // Test 4: Add to cart with test book
+    try {
+        console.log('\n4. Testing POST /api/cart/add');
+        const addResponse = await fetch(`${API_BASE}/cart/add`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({ BookId: 1, Quantity: 1 })
+            body: JSON.stringify({ 
+                BookId: 1, 
+                Quantity: 1 
+            })
         });
         
-        console.log(`✅ POST /cart/add - Status: ${response.status}`);
+        console.log('Add to cart status:', addResponse.status);
+        console.log('Response headers:', [...addResponse.headers.entries()]);
         
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Add to cart response:', data);
-            showAlert('Cart API test completed successfully!', 'success');
+        if (addResponse.ok) {
+            const addData = await addResponse.json();
+            console.log('Add to cart success:', addData);
+            showAlert('✅ Cart API test successful!', 'success');
         } else {
-            const errorText = await response.text();
-            console.log('Add to cart error:', errorText);
-            
-            if (response.status === 405) {
-                showAlert('❌ Method Not Allowed - Cart endpoint không hỗ trợ POST', 'danger');
-            } else {
-                showAlert(`❌ Cart API test failed: ${response.status}`, 'danger');
-            }
+            const errorText = await addResponse.text();
+            console.error('Add to cart error:', errorText);
+            showAlert(`❌ Cart API test failed: ${addResponse.status}`, 'danger');
         }
     } catch (error) {
-        console.error('❌ POST /cart/add - Error:', error);
+        console.error('Add to cart exception:', error);
         showAlert('❌ Cart API connection failed', 'danger');
     }
+    
+    console.log('\n=== Cart API Test Complete ===');
 }
 
 // Test backend connection
@@ -409,3 +465,23 @@ async function testBackendConnection() {
     
     showAlert('Backend connection test completed - check console', 'info');
 }
+const style = document.createElement('style');
+style.textContent = `
+    .pulse-animation {
+        animation: pulse 0.6s ease-out;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.5);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+`;
+document.head.appendChild(style);
