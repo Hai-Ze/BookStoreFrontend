@@ -7,6 +7,37 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../css/common.css" rel="stylesheet">
+    <style>
+        /* Ultra-fast loading states */
+        .instant-feedback {
+            transition: all 0.1s ease;
+        }
+        
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .cart-item {
+            transition: opacity 0.15s ease;
+        }
+        
+        .cart-item.removing {
+            opacity: 0.3;
+            transform: scale(0.98);
+        }
+        
+        /* Performance optimizations */
+        .perf-optimized {
+            contain: layout style paint;
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -24,14 +55,23 @@
         </div>
     </nav>
 
+    <!-- Performance Monitor (Debug) -->
+    <div id="perfMonitor" class="position-fixed top-0 end-0 bg-dark text-white p-2 small" style="z-index: 9999; font-family: monospace;">
+        <div>Load: <span id="loadTime">-</span>ms</div>
+        <div>API: <span id="apiTime">-</span>ms</div>
+        <div>Cache: <span id="cacheStatus">-</span></div>
+    </div>
+
     <!-- Cart Content -->
     <div class="container mt-4">
         <h2><i class="bi bi-cart"></i> Giỏ hàng của bạn</h2>
         
         <div class="row mt-4">
             <div class="col-md-8">
-                <div id="cartItems">
-                    <!-- Cart items will be loaded here -->
+                <div id="cartItems" class="perf-optimized">
+                    <!-- Ultra-fast skeleton -->
+                    <div class="loading-shimmer" style="height: 100px; border-radius: 8px; margin-bottom: 10px;"></div>
+                    <div class="loading-shimmer" style="height: 100px; border-radius: 8px; margin-bottom: 10px;"></div>
                 </div>
             </div>
             
@@ -42,17 +82,17 @@
                         <hr>
                         <div class="d-flex justify-content-between">
                             <span>Tổng sản phẩm:</span>
-                            <span id="totalItems">0</span>
+                            <span id="totalItems" class="instant-feedback">-</span>
                         </div>
                         <div class="d-flex justify-content-between mt-2">
                             <span>Tổng tiền:</span>
-                            <h5 class="text-success" id="totalAmount">$0.00</h5>
+                            <h5 class="text-success instant-feedback" id="totalAmount">$-.--</h5>
                         </div>
                         <hr>
-                        <button class="btn btn-success w-100" onclick="checkout()">
+                        <button class="btn btn-success w-100 instant-feedback" onclick="checkout()" id="checkoutBtn" disabled>
                             <i class="bi bi-credit-card"></i> Thanh toán
                         </button>
-                        <button class="btn btn-outline-danger w-100 mt-2" onclick="clearCart()">
+                        <button class="btn btn-outline-danger w-100 mt-2 instant-feedback" onclick="clearCart()" id="clearBtn" disabled>
                             <i class="bi bi-trash"></i> Xóa tất cả
                         </button>
                     </div>
@@ -64,112 +104,471 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../js/common.js"></script>
     <script>
-    //         if (!localStorage.getItem('authToken')) {
-    //     localStorage.setItem('authToken', 'fake-token-for-testing');
-    //     localStorage.setItem('currentUser', JSON.stringify({
-    //         id: 1,
-    //         email: 'admin@test.com',
-    //         fullName: 'Test Admin',
-    //         role: 'Admin', // Đổi thành 'Customer' nếu test User
-    //         avatarUrl: 'https://via.placeholder.com/40'
-    //     }));
-    // }
-            checkAuth();
-        loadCart();
+        // === ULTRA FAST CART - SUB-100MS TARGET ===
         
-        async function loadCart() {
+        // Performance tracking
+        const perfTracker = {
+            pageStart: performance.now(),
+            apiStart: 0,
+            apiEnd: 0,
+            loadStart: 0,
+            loadEnd: 0,
+            
+            markApiStart() {
+                this.apiStart = performance.now();
+                document.getElementById('apiTime').textContent = 'Loading...';
+            },
+            
+            markApiEnd() {
+                this.apiEnd = performance.now();
+                const apiTime = Math.round(this.apiEnd - this.apiStart);
+                document.getElementById('apiTime').textContent = apiTime;
+                return apiTime;
+            },
+            
+            markLoadStart() {
+                this.loadStart = performance.now();
+                document.getElementById('loadTime').textContent = 'Loading...';
+            },
+            
+            markLoadEnd() {
+                this.loadEnd = performance.now();
+                const loadTime = Math.round(this.loadEnd - this.loadStart);
+                document.getElementById('loadTime').textContent = loadTime;
+                return loadTime;
+            }
+        };
+
+        // Ultra-aggressive caching
+        const hyperCache = {
+            cart: null,
+            cartTimestamp: 0,
+            count: null,
+            countTimestamp: 0,
+            TTL: 3000, // 3 seconds only
+            
+            setCart(data) {
+                this.cart = data;
+                this.cartTimestamp = Date.now();
+                document.getElementById('cacheStatus').textContent = 'Fresh';
+                console.log('🔥 Cart hyper-cached');
+            },
+            
+            getCart() {
+                if (this.cart && (Date.now() - this.cartTimestamp) < this.TTL) {
+                    document.getElementById('cacheStatus').textContent = 'Hit';
+                    console.log('⚡ HYPER CACHE HIT');
+                    return this.cart;
+                }
+                document.getElementById('cacheStatus').textContent = 'Miss';
+                return null;
+            },
+            
+            setCount(count) {
+                this.count = count;
+                this.countTimestamp = Date.now();
+            },
+            
+            getCount() {
+                if (this.count !== null && (Date.now() - this.countTimestamp) < this.TTL) {
+                    return this.count;
+                }
+                return null;
+            },
+            
+            invalidate() {
+                this.cart = null;
+                this.count = null;
+                this.cartTimestamp = 0;
+                this.countTimestamp = 0;
+                document.getElementById('cacheStatus').textContent = 'Cleared';
+                console.log('🗑️ Cache invalidated');
+            }
+        };
+
+        // Ultra-fast API with timeout and abort
+        async function hyperApiCall(endpoint, options = {}) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+            
             try {
-                const result = await apiCall('/cart');
-                displayCart(result);
+                const token = localStorage.getItem('authToken');
+                if (!token) throw new Error('No token');
+
+                const config = {
+                    method: 'GET',
+                    signal: controller.signal,
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...options.headers
+                    }
+                };
+
+                const response = await fetch(`https://localhost:7288/api${endpoint}`, config);
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        handleAuthError();
+                        throw new Error('Auth failed');
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                return await response.json();
             } catch (error) {
-                showAlert('Lỗi tải giỏ hàng', 'danger');
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout');
+                }
+                throw error;
             }
         }
-        
-        function displayCart(cart) {
-            const container = document.getElementById('cartItems');
+
+        // Lightning-fast cart loading
+        async function loadCartLightning() {
+            perfTracker.markLoadStart();
             
-            if (cart.Items.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-5">
-                        <i class="bi bi-cart-x display-1 text-muted"></i>
-                        <h4 class="mt-3">Giỏ hàng trống</h4>
-                        <a href="/user/index.html" class="btn btn-primary mt-3">Mua sắm ngay</a>
-                    </div>
-                `;
+            // 1. INSTANT: Check hyper-cache first
+            const cached = hyperCache.getCart();
+            if (cached) {
+                displayCartLightning(cached);
+                perfTracker.markLoadEnd();
+                console.log(`⚡ INSTANT LOAD: ${perfTracker.markLoadEnd()}ms`);
                 return;
             }
+
+            // 2. Quick auth check
+            if (!quickAuthCheck()) {
+                perfTracker.markLoadEnd();
+                return;
+            }
+
+            try {
+                // 3. Fast API call
+                perfTracker.markApiStart();
+                const cartData = await hyperApiCall('/cart');
+                const apiTime = perfTracker.markApiEnd();
+
+                // 4. Cache immediately
+                hyperCache.setCart(cartData);
+
+                // 5. Display with minimal DOM operations
+                displayCartLightning(cartData);
+                
+                const totalTime = perfTracker.markLoadEnd();
+                console.log(`🚀 FULL LOAD: ${totalTime}ms (API: ${apiTime}ms)`);
+
+                // Update performance monitor
+                updatePerfMonitor(totalTime, apiTime, false);
+
+            } catch (error) {
+                console.error('❌ Cart load failed:', error);
+                perfTracker.markApiEnd();
+                perfTracker.markLoadEnd();
+                
+                // Try stale cache as last resort
+                if (hyperCache.cart) {
+                    console.log('📦 Using stale cache');
+                    displayCartLightning(hyperCache.cart);
+                    document.getElementById('cacheStatus').textContent = 'Stale';
+                } else {
+                    showErrorLightning(error);
+                }
+            }
+        }
+
+        // Lightning-fast display with minimal DOM manipulation
+        function displayCartLightning(cart) {
+            const container = document.getElementById('cartItems');
             
-            container.innerHTML = cart.Items.map(item => `
-                <div class="card mb-3">
-                    <div class="card-body">
+            if (!cart?.Items?.length) {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-cart-x display-1 text-muted"></i>
+                        <h4 class="mt-3">Giỏ hàng trống</h4>
+                        <a href="/user/index.html" class="btn btn-primary">Mua sắm ngay</a>
+                    </div>
+                `;
+                updateUIState(0, 0, false);
+                return;
+            }
+
+            // Ultra-fast HTML generation with template literals
+            const html = cart.Items.map(item => `
+                <div class="cart-item card mb-2" data-item-id="${item.Id}">
+                    <div class="card-body py-2">
                         <div class="row align-items-center">
-                            <div class="col-md-2">
-                                <img src="${item.BookCoverImg || 'https://via.placeholder.com/100'}" 
-                                     class="img-fluid rounded">
+                            <div class="col-2">
+                                <img src="${item.BookCoverImg || 'https://via.placeholder.com/60'}" 
+                                     class="img-fluid rounded" style="max-height: 60px; object-fit: cover;">
                             </div>
-                            <div class="col-md-5">
-                                <h6>${item.BookTitle}</h6>
-                                <p class="text-muted mb-0">${item.BookAuthor}</p>
+                            <div class="col-5">
+                                <h6 class="mb-1">${item.BookTitle}</h6>
+                                <small class="text-muted">${item.BookAuthor} - ${item.BookPrice.toFixed(2)}</small>
                             </div>
-                            <div class="col-md-2">
-                                <input type="number" class="form-control" value="${item.Quantity}" 
-                                       min="1" max="99" onchange="updateQuantity(${item.Id}, this.value)">
+                            <div class="col-2">
+                                <input type="number" class="form-control form-control-sm quantity-input" 
+                                       value="${item.Quantity}" min="1" max="99" 
+                                       data-item-id="${item.Id}">
                             </div>
-                            <div class="col-md-2">
-                                <h6 class="text-success">${formatPrice(item.TotalPrice)}</h6>
+                            <div class="col-2">
+                                <strong class="text-success">${item.TotalPrice.toFixed(2)}</strong>
                             </div>
-                            <div class="col-md-1">
-                                <button class="btn btn-sm btn-danger" onclick="removeItem(${item.Id})">
-                                    <i class="bi bi-trash"></i>
+                            <div class="col-1">
+                                <button class="btn btn-sm btn-outline-danger remove-btn" 
+                                        data-item-id="${item.Id}">
+                                    <i class="bi bi-x"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
             `).join('');
-            
-            document.getElementById('totalItems').textContent = cart.TotalItems;
-            document.getElementById('totalAmount').textContent = formatPrice(cart.TotalAmount);
+
+            // Single DOM update
+            container.innerHTML = html;
+
+            // Update totals and buttons
+            updateUIState(cart.TotalItems || 0, cart.TotalAmount || 0, true);
+
+            // Attach event listeners once
+            attachEventListenersLightning(container);
         }
-        
-        async function updateQuantity(itemId, quantity) {
+
+        // Ultra-efficient event listeners
+        function attachEventListenersLightning(container) {
+            // Remove existing listeners to prevent memory leaks
+            container.removeEventListener('change', quantityChangeHandler);
+            container.removeEventListener('click', clickHandler);
+            
+            // Add new listeners with delegation
+            container.addEventListener('change', quantityChangeHandler);
+            container.addEventListener('click', clickHandler);
+        }
+
+        // Event handlers
+        function quantityChangeHandler(e) {
+            if (e.target.classList.contains('quantity-input')) {
+                const itemId = parseInt(e.target.dataset.itemId);
+                const quantity = parseInt(e.target.value);
+                updateQuantityLightning(itemId, quantity, e.target);
+            }
+        }
+
+        function clickHandler(e) {
+            if (e.target.closest('.remove-btn')) {
+                const itemId = parseInt(e.target.closest('.remove-btn').dataset.itemId);
+                removeItemLightning(itemId);
+            }
+        }
+
+        // Lightning-fast quantity update
+        async function updateQuantityLightning(itemId, quantity, inputElement) {
+            const row = inputElement.closest('.cart-item');
+            const originalValue = inputElement.value;
+            
+            // Optimistic UI
+            row.style.opacity = '0.7';
+            inputElement.disabled = true;
+            
             try {
-                await apiCall('/cart/update', {
+                await hyperApiCall('/cart/update', {
                     method: 'PUT',
-                    body: JSON.stringify({ CartItemId: itemId, Quantity: parseInt(quantity) })
+                    body: JSON.stringify({ CartItemId: itemId, Quantity: quantity })
                 });
-                loadCart();
+
+                // Success: invalidate cache and quick reload
+                hyperCache.invalidate();
+                setTimeout(() => loadCartLightning(), 50);
+                
+                showToastLightning('Cập nhật thành công', 'success');
             } catch (error) {
-                showAlert('Lỗi cập nhật số lượng', 'danger');
+                // Revert on error
+                inputElement.value = originalValue;
+                row.style.opacity = '1';
+                inputElement.disabled = false;
+                showToastLightning('Lỗi cập nhật', 'error');
             }
         }
-        
-        async function removeItem(itemId) {
-            try {
-                await apiCall(`/cart/remove/${itemId}`, { method: 'DELETE' });
-                showAlert('Đã xóa khỏi giỏ hàng', 'success');
-                loadCart();
-            } catch (error) {
-                showAlert('Lỗi xóa sản phẩm', 'danger');
-            }
-        }
-        
-        async function clearCart() {
-            if (!confirm('Xóa tất cả sản phẩm trong giỏ?')) return;
+
+        // Lightning-fast item removal
+        async function removeItemLightning(itemId) {
+            if (!confirm('Xóa sản phẩm này?')) return;
+            
+            const row = document.querySelector(`[data-item-id="${itemId}"]`);
+            
+            // Optimistic UI - immediate visual feedback
+            row.classList.add('removing');
             
             try {
-                await apiCall('/cart/clear', { method: 'DELETE' });
-                showAlert('Đã xóa toàn bộ giỏ hàng', 'success');
-                loadCart();
+                await hyperApiCall(`/cart/remove/${itemId}`, { method: 'DELETE' });
+
+                // Success: remove from DOM immediately
+                row.remove();
+                
+                // Invalidate cache and update
+                hyperCache.invalidate();
+                setTimeout(() => loadCartLightning(), 50);
+                
+                showToastLightning('Đã xóa', 'success');
             } catch (error) {
-                showAlert('Lỗi xóa giỏ hàng', 'danger');
+                // Revert on error
+                row.classList.remove('removing');
+                showToastLightning('Lỗi xóa', 'error');
             }
         }
-        
-        function checkout() {
-            alert('Chức năng thanh toán đang phát triển!');
+
+        // Lightning-fast clear cart
+        async function clearCart() {
+            if (!confirm('Xóa tất cả sản phẩm?')) return;
+            
+            try {
+                await hyperApiCall('/cart/clear', { method: 'DELETE' });
+                hyperCache.invalidate();
+                loadCartLightning();
+                showToastLightning('Đã xóa toàn bộ', 'success');
+            } catch (error) {
+                showToastLightning('Lỗi xóa giỏ hàng', 'error');
+            }
         }
+
+        // Utility functions
+        function updateUIState(items, amount, hasItems) {
+            document.getElementById('totalItems').textContent = items;
+            document.getElementById('totalAmount').textContent = `${amount.toFixed(2)}`;
+            document.getElementById('checkoutBtn').disabled = !hasItems;
+            document.getElementById('clearBtn').disabled = !hasItems;
+        }
+
+        function quickAuthCheck() {
+            const token = localStorage.getItem('authToken');
+            if (!token || token.split('.').length !== 3) {
+                showNoAuthLightning();
+                return false;
+            }
+            return true;
+        }
+
+        function showNoAuthLightning() {
+            document.getElementById('cartItems').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-person-x display-1 text-warning"></i>
+                    <h4>Chưa đăng nhập</h4>
+                    <a href="/auth/login.html" class="btn btn-primary">Đăng nhập</a>
+                </div>
+            `;
+        }
+
+        function showErrorLightning(error) {
+            document.getElementById('cartItems').innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+                    <h4>Lỗi tải giỏ hàng</h4>
+                    <p class="text-muted">${error.message}</p>
+                    <button onclick="forceReload()" class="btn btn-primary">Thử lại</button>
+                </div>
+            `;
+        }
+
+        function handleAuthError() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            window.location.href = '/auth/login.html';
+        }
+
+        function forceReload() {
+            hyperCache.invalidate();
+            loadCartLightning();
+        }
+
+        // Ultra-fast toast notifications
+        function showToastLightning(message, type = 'info') {
+            const existing = document.querySelector('.toast-lightning');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-lightning alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
+            toast.style.cssText = 'top: 80px; right: 20px; z-index: 9999; padding: 8px 12px; font-size: 0.9rem;';
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function updatePerfMonitor(loadTime, apiTime, fromCache) {
+            document.getElementById('loadTime').textContent = loadTime;
+            document.getElementById('apiTime').textContent = fromCache ? 'cached' : apiTime;
+        }
+
+        // Other functions
+        function checkout() {
+            const total = document.getElementById('totalAmount').textContent;
+            alert(`Thanh toán ${total}`);
+        }
+
+        function logout() {
+            if (confirm('Đăng xuất?')) {
+                localStorage.clear();
+                window.location.href = '/auth/login.html';
+            }
+        }
+
+        // Initialize with maximum speed
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Lightning Cart initialized');
+            
+            // Hide perf monitor in production
+            if (window.location.hostname !== 'localhost') {
+                document.getElementById('perfMonitor').style.display = 'none';
+            }
+            
+            // Load cart immediately
+            loadCartLightning();
+        });
+
+        // Smart refresh strategies
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && hyperCache.cart && 
+                (Date.now() - hyperCache.cartTimestamp) > hyperCache.TTL) {
+                console.log('👁️ Page visible, cache expired, refreshing');
+                loadCartLightning();
+            }
+        });
+
+        // Network change handling
+        window.addEventListener('online', () => {
+            console.log('🌐 Back online');
+            hyperCache.invalidate();
+            loadCartLightning();
+        });
+
+        // Performance optimization
+        window.addEventListener('beforeunload', () => {
+            // Cleanup to prevent memory leaks
+            hyperCache.invalidate();
+        });
+
+        // Debug tools
+        window.lightningDebug = {
+            cache: hyperCache,
+            perf: perfTracker,
+            reload: forceReload,
+            clearCache: () => hyperCache.invalidate(),
+            testSpeed: async () => {
+                hyperCache.invalidate();
+                const start = performance.now();
+                await loadCartLightning();
+                const end = performance.now();
+                console.log(`🔥 Speed test: ${Math.round(end - start)}ms`);
+            }
+        };
+
+        console.log('⚡ Lightning debug: window.lightningDebug');
     </script>
 </body>
 </html>
