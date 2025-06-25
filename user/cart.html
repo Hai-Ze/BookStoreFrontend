@@ -4,571 +4,749 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giỏ hàng - BookStore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="../css/common.css" rel="stylesheet">
+    
+    <!-- Hardcover Style CSS -->
+    <link href="../css/hardcover-style.css" rel="stylesheet">
+    
     <style>
-        /* Ultra-fast loading states */
-        .instant-feedback {
-            transition: all 0.1s ease;
+        /* Cart specific styles */
+        .hc-cart-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: var(--hc-space-2xl);
+            margin-top: var(--hc-space-xl);
         }
         
-        .loading-shimmer {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1s infinite;
+        .hc-cart-items {
+            background: var(--hc-bg-primary);
+            border-radius: 16px;
+            padding: var(--hc-space-xl);
+            border: 1px solid var(--hc-border-light);
         }
         
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+        .hc-cart-summary {
+            background: var(--hc-bg-secondary);
+            border-radius: 16px;
+            padding: var(--hc-space-xl);
+            border: 1px solid var(--hc-border-light);
+            height: fit-content;
+            position: sticky;
+            top: 100px;
         }
         
-        .cart-item {
-            transition: opacity 0.15s ease;
+        .hc-cart-item {
+            display: grid;
+            grid-template-columns: 80px 1fr auto auto auto;
+            gap: var(--hc-space-md);
+            align-items: center;
+            padding: var(--hc-space-lg);
+            border-bottom: 1px solid var(--hc-border-light);
+            transition: var(--hc-transition);
         }
         
-        .cart-item.removing {
-            opacity: 0.3;
+        .hc-cart-item:last-child {
+            border-bottom: none;
+        }
+        
+        .hc-cart-item:hover {
+            background: var(--hc-bg-secondary);
+            border-radius: 12px;
+        }
+        
+        .hc-cart-item.removing {
+            opacity: 0.5;
             transform: scale(0.98);
         }
         
-        /* Performance optimizations */
-        .perf-optimized {
-            contain: layout style paint;
+        .hc-cart-item-image {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: var(--hc-shadow);
+        }
+        
+        .hc-cart-item-info h4 {
+            margin: 0 0 var(--hc-space-xs) 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .hc-cart-item-author {
+            color: var(--hc-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--hc-space-sm);
+        }
+        
+        .hc-cart-item-price {
+            font-weight: 600;
+            color: var(--hc-success);
+        }
+        
+        .hc-quantity-control {
+            display: flex;
+            align-items: center;
+            gap: var(--hc-space-sm);
+            background: var(--hc-bg-primary);
+            border: 1px solid var(--hc-border-medium);
+            border-radius: 8px;
+            padding: var(--hc-space-xs);
+        }
+        
+        .hc-quantity-btn {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--hc-transition);
+            color: var(--hc-text-secondary);
+        }
+        
+        .hc-quantity-btn:hover {
+            background: var(--hc-bg-secondary);
+            color: var(--hc-text-primary);
+        }
+        
+        .hc-quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .hc-quantity-input {
+            width: 50px;
+            text-align: center;
+            border: none;
+            background: none;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .hc-total-price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--hc-primary);
+            text-align: right;
+        }
+        
+        .hc-remove-btn {
+            background: none;
+            border: none;
+            color: var(--hc-text-secondary);
+            cursor: pointer;
+            padding: var(--hc-space-sm);
+            border-radius: 6px;
+            transition: var(--hc-transition);
+        }
+        
+        .hc-remove-btn:hover {
+            background: var(--hc-danger);
+            color: white;
+        }
+        
+        .hc-empty-cart {
+            text-align: center;
+            padding: var(--hc-space-3xl);
+            color: var(--hc-text-secondary);
+        }
+        
+        .hc-empty-cart i {
+            font-size: 4rem;
+            margin-bottom: var(--hc-space-lg);
+            opacity: 0.5;
+        }
+        
+        .hc-summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--hc-space-md);
+        }
+        
+        .hc-summary-total {
+            border-top: 2px solid var(--hc-border-medium);
+            padding-top: var(--hc-space-md);
+            margin-top: var(--hc-space-md);
+        }
+        
+        .hc-summary-total .hc-summary-row {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+        
+        .hc-checkout-actions {
+            margin-top: var(--hc-space-xl);
+            display: flex;
+            flex-direction: column;
+            gap: var(--hc-space-md);
+        }
+        
+        .hc-progress-indicator {
+            background: var(--hc-bg-tertiary);
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: var(--hc-space-lg);
+        }
+        
+        .hc-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--hc-accent), var(--hc-success));
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        @media (max-width: 768px) {
+            .hc-cart-container {
+                grid-template-columns: 1fr;
+                gap: var(--hc-space-lg);
+            }
+            
+            .hc-cart-summary {
+                position: static;
+                order: -1;
+            }
+            
+            .hc-cart-item {
+                grid-template-columns: 60px 1fr;
+                gap: var(--hc-space-sm);
+            }
+            
+            .hc-cart-item-actions {
+                grid-column: 1 / -1;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: var(--hc-space-sm);
+            }
+        }
+        
+        /* Loading animation */
+        .hc-cart-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        
+        /* Optimistic UI feedback */
+        .hc-updating {
+            pointer-events: none;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
     <!-- Header -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
-            <a class="navbar-brand" href="/user/index.html">
-                <i class="bi bi-book"></i> BookStore
+    <header class="hc-header">
+        <nav class="hc-nav">
+            <a href="/user/index.html" class="hc-logo">
+                <i class="bi bi-book-half"></i>
+                BookStore
             </a>
-            <div class="d-flex">
-                <a href="/user/index.html" class="btn btn-outline-primary me-2">
-                    <i class="bi bi-arrow-left"></i> Tiếp tục mua
+            
+            <div class="hc-nav-actions">
+                <a href="/user/index.html" class="hc-btn hc-btn-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Tiếp tục mua sắm
                 </a>
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Performance Monitor (Debug) -->
-    <div id="perfMonitor" class="position-fixed top-0 end-0 bg-dark text-white p-2 small" style="z-index: 9999; font-family: monospace;">
-        <div>Load: <span id="loadTime">-</span>ms</div>
-        <div>API: <span id="apiTime">-</span>ms</div>
-        <div>Cache: <span id="cacheStatus">-</span></div>
-    </div>
-
-    <!-- Cart Content -->
-    <div class="container mt-4">
-        <h2><i class="bi bi-cart"></i> Giỏ hàng của bạn</h2>
-        
-        <div class="row mt-4">
-            <div class="col-md-8">
-                <div id="cartItems" class="perf-optimized">
-                    <!-- Ultra-fast skeleton -->
-                    <div class="loading-shimmer" style="height: 100px; border-radius: 8px; margin-bottom: 10px;"></div>
-                    <div class="loading-shimmer" style="height: 100px; border-radius: 8px; margin-bottom: 10px;"></div>
+                
+                <div class="hc-user-menu">
+                    <img id="userAvatar" src="" class="hc-avatar" alt="User Avatar">
+                    <span id="userName">User</span>
                 </div>
             </div>
-            
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Tổng đơn hàng</h5>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <span>Tổng sản phẩm:</span>
-                            <span id="totalItems" class="instant-feedback">-</span>
-                        </div>
-                        <div class="d-flex justify-content-between mt-2">
-                            <span>Tổng tiền:</span>
-                            <h5 class="text-success instant-feedback" id="totalAmount">$-.--</h5>
-                        </div>
-                        <hr>
-                        <button class="btn btn-success w-100 instant-feedback" onclick="checkout()" id="checkoutBtn" disabled>
-                            <i class="bi bi-credit-card"></i> Thanh toán
-                        </button>
-                        <button class="btn btn-outline-danger w-100 mt-2 instant-feedback" onclick="clearCart()" id="clearBtn" disabled>
-                            <i class="bi bi-trash"></i> Xóa tất cả
-                        </button>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="hc-main">
+        <!-- Page Title -->
+        <div class="hc-text-center" style="margin-bottom: var(--hc-space-xl);">
+            <h1>Giỏ hàng của bạn</h1>
+            <p style="color: var(--hc-text-secondary);">Xem lại và chỉnh sửa đơn hàng trước khi thanh toán</p>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="hc-progress-indicator">
+            <div class="hc-progress-bar" id="cartProgress"></div>
+        </div>
+
+        <!-- Cart Container -->
+        <div class="hc-cart-container">
+            <!-- Cart Items -->
+            <div class="hc-cart-items">
+                <h2 style="margin-bottom: var(--hc-space-lg);">
+                    <i class="bi bi-cart"></i>
+                    Sản phẩm trong giỏ hàng
+                </h2>
+                
+                <div id="cartItemsContainer">
+                    <!-- Loading state -->
+                    <div class="hc-cart-loading">
+                        <div class="hc-spinner"></div>
                     </div>
                 </div>
             </div>
+
+            <!-- Cart Summary -->
+            <div class="hc-cart-summary">
+                <h3 style="margin-bottom: var(--hc-space-lg);">
+                    <i class="bi bi-receipt"></i>
+                    Tóm tắt đơn hàng
+                </h3>
+                
+                <div class="hc-summary-row">
+                    <span>Tổng sản phẩm:</span>
+                    <span id="totalItems">0</span>
+                </div>
+                
+                <div class="hc-summary-row">
+                    <span>Tạm tính:</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                
+                <div class="hc-summary-row">
+                    <span>Phí vận chuyển:</span>
+                    <span style="color: var(--hc-success);">Miễn phí</span>
+                </div>
+                
+                <div class="hc-summary-total">
+                    <div class="hc-summary-row">
+                        <span>Tổng cộng:</span>
+                        <span id="totalAmount" style="color: var(--hc-success);">$0.00</span>
+                    </div>
+                </div>
+                
+                <div class="hc-checkout-actions">
+                    <button class="hc-btn hc-btn-primary hc-btn-lg" 
+                            onclick="proceedToCheckout()"
+                            id="checkoutBtn"
+                            disabled>
+                        <i class="bi bi-credit-card"></i>
+                        Tiến hành thanh toán
+                    </button>
+                    
+                    <button class="hc-btn hc-btn-secondary" 
+                            onclick="clearCart()"
+                            id="clearCartBtn"
+                            disabled>
+                        <i class="bi bi-trash"></i>
+                        Xóa tất cả
+                    </button>
+                    
+                    <button class="hc-btn hc-btn-secondary" 
+                            onclick="saveForLater()"
+                            id="saveForLaterBtn"
+                            disabled>
+                        <i class="bi bi-bookmark"></i>
+                        Lưu để mua sau
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Scripts -->
     <script src="../js/common.js"></script>
+    <script src="../js/hardcover-ui.js"></script>
     <script>
-        // === ULTRA FAST CART - SUB-100MS TARGET ===
-        
-        // Performance tracking
-        const perfTracker = {
-            pageStart: performance.now(),
-            apiStart: 0,
-            apiEnd: 0,
-            loadStart: 0,
-            loadEnd: 0,
-            
-            markApiStart() {
-                this.apiStart = performance.now();
-                document.getElementById('apiTime').textContent = 'Loading...';
-            },
-            
-            markApiEnd() {
-                this.apiEnd = performance.now();
-                const apiTime = Math.round(this.apiEnd - this.apiStart);
-                document.getElementById('apiTime').textContent = apiTime;
-                return apiTime;
-            },
-            
-            markLoadStart() {
-                this.loadStart = performance.now();
-                document.getElementById('loadTime').textContent = 'Loading...';
-            },
-            
-            markLoadEnd() {
-                this.loadEnd = performance.now();
-                const loadTime = Math.round(this.loadEnd - this.loadStart);
-                document.getElementById('loadTime').textContent = loadTime;
-                return loadTime;
-            }
-        };
+        // Cart state
+        let cartData = null;
+        let updateQueue = [];
+        let isUpdating = false;
 
-        // Ultra-aggressive caching
-        const hyperCache = {
-            cart: null,
-            cartTimestamp: 0,
-            count: null,
-            countTimestamp: 0,
-            TTL: 3000, // 3 seconds only
+        // Initialize cart
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🛒 Hardcover Cart initialized');
             
-            setCart(data) {
-                this.cart = data;
-                this.cartTimestamp = Date.now();
-                document.getElementById('cacheStatus').textContent = 'Fresh';
-                console.log('🔥 Cart hyper-cached');
-            },
-            
-            getCart() {
-                if (this.cart && (Date.now() - this.cartTimestamp) < this.TTL) {
-                    document.getElementById('cacheStatus').textContent = 'Hit';
-                    console.log('⚡ HYPER CACHE HIT');
-                    return this.cart;
-                }
-                document.getElementById('cacheStatus').textContent = 'Miss';
-                return null;
-            },
-            
-            setCount(count) {
-                this.count = count;
-                this.countTimestamp = Date.now();
-            },
-            
-            getCount() {
-                if (this.count !== null && (Date.now() - this.countTimestamp) < this.TTL) {
-                    return this.count;
-                }
-                return null;
-            },
-            
-            invalidate() {
-                this.cart = null;
-                this.count = null;
-                this.cartTimestamp = 0;
-                this.countTimestamp = 0;
-                document.getElementById('cacheStatus').textContent = 'Cleared';
-                console.log('🗑️ Cache invalidated');
+            // Check authentication
+            if (!checkAuth()) {
+                return;
             }
-        };
-
-        // Ultra-fast API with timeout and abort
-        async function hyperApiCall(endpoint, options = {}) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
             
+            updateUserInfo();
+            loadCart();
+        });
+
+        // Load cart data
+        async function loadCart() {
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) throw new Error('No token');
-
-                const config = {
-                    method: 'GET',
-                    signal: controller.signal,
-                    ...options,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'Cache-Control': 'no-cache',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        ...options.headers
-                    }
-                };
-
-                const response = await fetch(`https://localhost:7288/api${endpoint}`, config);
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        handleAuthError();
-                        throw new Error('Auth failed');
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                return await response.json();
+                showCartLoading();
+                const response = await hyperApiCall('/cart');
+                cartData = response;
+                displayCart(response);
+                updateProgress();
             } catch (error) {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    throw new Error('Request timeout');
-                }
-                throw error;
+                console.error('Error loading cart:', error);
+                showCartError(error.message);
             }
         }
 
-        // Lightning-fast cart loading
-        async function loadCartLightning() {
-            perfTracker.markLoadStart();
+        // Display cart items
+        function displayCart(cart) {
+            const container = document.getElementById('cartItemsContainer');
             
-            // 1. INSTANT: Check hyper-cache first
-            const cached = hyperCache.getCart();
-            if (cached) {
-                displayCartLightning(cached);
-                perfTracker.markLoadEnd();
-                console.log(`⚡ INSTANT LOAD: ${perfTracker.markLoadEnd()}ms`);
-                return;
-            }
-
-            // 2. Quick auth check
-            if (!quickAuthCheck()) {
-                perfTracker.markLoadEnd();
-                return;
-            }
-
-            try {
-                // 3. Fast API call
-                perfTracker.markApiStart();
-                const cartData = await hyperApiCall('/cart');
-                const apiTime = perfTracker.markApiEnd();
-
-                // 4. Cache immediately
-                hyperCache.setCart(cartData);
-
-                // 5. Display with minimal DOM operations
-                displayCartLightning(cartData);
-                
-                const totalTime = perfTracker.markLoadEnd();
-                console.log(`🚀 FULL LOAD: ${totalTime}ms (API: ${apiTime}ms)`);
-
-                // Update performance monitor
-                updatePerfMonitor(totalTime, apiTime, false);
-
-            } catch (error) {
-                console.error('❌ Cart load failed:', error);
-                perfTracker.markApiEnd();
-                perfTracker.markLoadEnd();
-                
-                // Try stale cache as last resort
-                if (hyperCache.cart) {
-                    console.log('📦 Using stale cache');
-                    displayCartLightning(hyperCache.cart);
-                    document.getElementById('cacheStatus').textContent = 'Stale';
-                } else {
-                    showErrorLightning(error);
-                }
-            }
-        }
-
-        // Lightning-fast display with minimal DOM manipulation
-        function displayCartLightning(cart) {
-            const container = document.getElementById('cartItems');
-            
-            if (!cart?.Items?.length) {
+            if (!cart.Items || cart.Items.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-4">
-                        <i class="bi bi-cart-x display-1 text-muted"></i>
-                        <h4 class="mt-3">Giỏ hàng trống</h4>
-                        <a href="/user/index.html" class="btn btn-primary">Mua sắm ngay</a>
+                    <div class="hc-empty-cart">
+                        <i class="bi bi-cart-x"></i>
+                        <h3>Giỏ hàng trống</h3>
+                        <p>Hãy thêm một vài cuốn sách yêu thích vào giỏ hàng của bạn</p>
+                        <a href="/user/index.html" class="hc-btn hc-btn-primary hc-btn-lg">
+                            <i class="bi bi-search"></i>
+                            Khám phá sách
+                        </a>
                     </div>
                 `;
-                updateUIState(0, 0, false);
+                updateSummary(0, 0);
                 return;
             }
 
-            // Ultra-fast HTML generation with template literals
-            const html = cart.Items.map(item => `
-                <div class="cart-item card mb-2" data-item-id="${item.Id}">
-                    <div class="card-body py-2">
-                        <div class="row align-items-center">
-                            <div class="col-2">
-                                <img src="${item.BookCoverImg || 'https://via.placeholder.com/60'}" 
-                                     class="img-fluid rounded" style="max-height: 60px; object-fit: cover;">
-                            </div>
-                            <div class="col-5">
-                                <h6 class="mb-1">${item.BookTitle}</h6>
-                                <small class="text-muted">${item.BookAuthor} - ${item.BookPrice.toFixed(2)}</small>
-                            </div>
-                            <div class="col-2">
-                                <input type="number" class="form-control form-control-sm quantity-input" 
-                                       value="${item.Quantity}" min="1" max="99" 
-                                       data-item-id="${item.Id}">
-                            </div>
-                            <div class="col-2">
-                                <strong class="text-success">${item.TotalPrice.toFixed(2)}</strong>
-                            </div>
-                            <div class="col-1">
-                                <button class="btn btn-sm btn-outline-danger remove-btn" 
-                                        data-item-id="${item.Id}">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </div>
-                        </div>
+            container.innerHTML = cart.Items.map(item => `
+                <div class="hc-cart-item" data-item-id="${item.Id}">
+                    <img src="${item.BookCoverImg || 'https://via.placeholder.com/80x120?text=No+Cover'}" 
+                         alt="${item.BookTitle}" 
+                         class="hc-cart-item-image">
+                    
+                    <div class="hc-cart-item-info">
+                        <h4>${item.BookTitle}</h4>
+                        <div class="hc-cart-item-author">${item.BookAuthor}</div>
+                        <div class="hc-cart-item-price">${item.BookPrice.toFixed(2)}</div>
                     </div>
+                    
+                    <div class="hc-quantity-control">
+                        <button class="hc-quantity-btn" 
+                                onclick="updateQuantity(${item.Id}, ${item.Quantity - 1})"
+                                ${item.Quantity <= 1 ? 'disabled' : ''}>
+                            <i class="bi bi-dash"></i>
+                        </button>
+                        <input type="number" 
+                               class="hc-quantity-input" 
+                               value="${item.Quantity}"
+                               min="1" 
+                               max="99"
+                               onchange="updateQuantity(${item.Id}, this.value)">
+                        <button class="hc-quantity-btn" 
+                                onclick="updateQuantity(${item.Id}, ${item.Quantity + 1})"
+                                ${item.Quantity >= 99 ? 'disabled' : ''}>
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="hc-total-price">
+                        ${item.TotalPrice.toFixed(2)}
+                    </div>
+                    
+                    <button class="hc-remove-btn" 
+                            onclick="removeItem(${item.Id})"
+                            title="Xóa khỏi giỏ hàng">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </div>
             `).join('');
 
-            // Single DOM update
-            container.innerHTML = html;
-
-            // Update totals and buttons
-            updateUIState(cart.TotalItems || 0, cart.TotalAmount || 0, true);
-
-            // Attach event listeners once
-            attachEventListenersLightning(container);
+            updateSummary(cart.TotalItems, cart.TotalAmount);
+            enableButtons();
         }
 
-        // Ultra-efficient event listeners
-        function attachEventListenersLightning(container) {
-            // Remove existing listeners to prevent memory leaks
-            container.removeEventListener('change', quantityChangeHandler);
-            container.removeEventListener('click', clickHandler);
+        // Update cart summary
+        function updateSummary(totalItems, totalAmount) {
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('subtotal').textContent = `${totalAmount.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `${totalAmount.toFixed(2)}`;
             
-            // Add new listeners with delegation
-            container.addEventListener('change', quantityChangeHandler);
-            container.addEventListener('click', clickHandler);
+            // Update buttons state
+            const hasItems = totalItems > 0;
+            document.getElementById('checkoutBtn').disabled = !hasItems;
+            document.getElementById('clearCartBtn').disabled = !hasItems;
+            document.getElementById('saveForLaterBtn').disabled = !hasItems;
         }
 
-        // Event handlers
-        function quantityChangeHandler(e) {
-            if (e.target.classList.contains('quantity-input')) {
-                const itemId = parseInt(e.target.dataset.itemId);
-                const quantity = parseInt(e.target.value);
-                updateQuantityLightning(itemId, quantity, e.target);
+        // Update progress indicator
+        function updateProgress() {
+            const progressBar = document.getElementById('cartProgress');
+            const totalItems = cartData?.TotalItems || 0;
+            
+            // Progress based on cart value (example: $100 = 100%)
+            const progressPercentage = Math.min((cartData?.TotalAmount || 0) * 2, 100);
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+
+        // Show loading state
+        function showCartLoading() {
+            document.getElementById('cartItemsContainer').innerHTML = `
+                <div class="hc-cart-loading">
+                    <div class="hc-spinner"></div>
+                    <p style="margin-top: var(--hc-space-md); color: var(--hc-text-secondary);">
+                        Đang tải giỏ hàng...
+                    </p>
+                </div>
+            `;
+            disableButtons();
+        }
+
+        // Show error state
+        function showCartError(message) {
+            document.getElementById('cartItemsContainer').innerHTML = `
+                <div class="hc-empty-cart">
+                    <i class="bi bi-exclamation-triangle" style="color: var(--hc-danger);"></i>
+                    <h3>Lỗi tải giỏ hàng</h3>
+                    <p>${message}</p>
+                    <button class="hc-btn hc-btn-primary" onclick="loadCart()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Thử lại
+                    </button>
+                </div>
+            `;
+            disableButtons();
+        }
+
+        // Update item quantity
+        async function updateQuantity(itemId, newQuantity) {
+            newQuantity = parseInt(newQuantity);
+            
+            if (newQuantity < 1 || newQuantity > 99) {
+                HardcoverUI.NotificationSystem.show('Số lượng phải từ 1 đến 99', 'warning');
+                return;
             }
-        }
 
-        function clickHandler(e) {
-            if (e.target.closest('.remove-btn')) {
-                const itemId = parseInt(e.target.closest('.remove-btn').dataset.itemId);
-                removeItemLightning(itemId);
+            // Optimistic UI update
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (itemElement) {
+                itemElement.classList.add('hc-updating');
+                
+                // Update input value immediately
+                const input = itemElement.querySelector('.hc-quantity-input');
+                input.value = newQuantity;
             }
-        }
 
-        // Lightning-fast quantity update
-        async function updateQuantityLightning(itemId, quantity, inputElement) {
-            const row = inputElement.closest('.cart-item');
-            const originalValue = inputElement.value;
-            
-            // Optimistic UI
-            row.style.opacity = '0.7';
-            inputElement.disabled = true;
-            
             try {
-                await hyperApiCall('/cart/update', {
+                const response = await hyperApiCall('/cart/update', {
                     method: 'PUT',
-                    body: JSON.stringify({ CartItemId: itemId, Quantity: quantity })
+                    body: JSON.stringify({
+                        CartItemId: itemId,
+                        Quantity: newQuantity
+                    })
                 });
 
-                // Success: invalidate cache and quick reload
-                hyperCache.invalidate();
-                setTimeout(() => loadCartLightning(), 50);
-                
-                showToastLightning('Cập nhật thành công', 'success');
+                if (response.Success || response.success) {
+                    // Reload cart to get updated totals
+                    await loadCart();
+                    HardcoverUI.NotificationSystem.show('Đã cập nhật số lượng', 'success', 2000);
+                } else {
+                    throw new Error(response.Message || 'Không thể cập nhật');
+                }
             } catch (error) {
-                // Revert on error
-                inputElement.value = originalValue;
-                row.style.opacity = '1';
-                inputElement.disabled = false;
-                showToastLightning('Lỗi cập nhật', 'error');
+                console.error('Error updating quantity:', error);
+                HardcoverUI.NotificationSystem.show('Lỗi cập nhật: ' + error.message, 'error');
+                
+                // Revert optimistic update
+                if (itemElement) {
+                    const originalItem = cartData?.Items?.find(item => item.Id === itemId);
+                    if (originalItem) {
+                        const input = itemElement.querySelector('.hc-quantity-input');
+                        input.value = originalItem.Quantity;
+                    }
+                }
+            } finally {
+                if (itemElement) {
+                    itemElement.classList.remove('hc-updating');
+                }
             }
         }
 
-        // Lightning-fast item removal
-        async function removeItemLightning(itemId) {
-            if (!confirm('Xóa sản phẩm này?')) return;
+        // Remove item from cart
+        async function removeItem(itemId) {
+            const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+            const itemTitle = itemElement?.querySelector('h4')?.textContent || 'sản phẩm';
             
-            const row = document.querySelector(`[data-item-id="${itemId}"]`);
-            
-            // Optimistic UI - immediate visual feedback
-            row.classList.add('removing');
-            
+            // Confirm removal
+            if (!confirm(`Bạn có chắc muốn xóa "${itemTitle}" khỏi giỏ hàng?`)) {
+                return;
+            }
+
+            // Optimistic UI update
+            if (itemElement) {
+                itemElement.classList.add('removing');
+            }
+
             try {
-                await hyperApiCall(`/cart/remove/${itemId}`, { method: 'DELETE' });
+                const response = await hyperApiCall(`/cart/remove/${itemId}`, {
+                    method: 'DELETE'
+                });
 
-                // Success: remove from DOM immediately
-                row.remove();
-                
-                // Invalidate cache and update
-                hyperCache.invalidate();
-                setTimeout(() => loadCartLightning(), 50);
-                
-                showToastLightning('Đã xóa', 'success');
+                if (response.Success || response.success) {
+                    // Remove from DOM
+                    if (itemElement) {
+                        itemElement.style.animation = 'slideOutRight 0.3s ease-in forwards';
+                        setTimeout(() => {
+                            itemElement.remove();
+                        }, 300);
+                    }
+                    
+                    // Reload cart
+                    setTimeout(() => loadCart(), 400);
+                    HardcoverUI.NotificationSystem.show(`Đã xóa "${itemTitle}"`, 'success', 3000);
+                } else {
+                    throw new Error(response.Message || 'Không thể xóa');
+                }
             } catch (error) {
-                // Revert on error
-                row.classList.remove('removing');
-                showToastLightning('Lỗi xóa', 'error');
+                console.error('Error removing item:', error);
+                HardcoverUI.NotificationSystem.show('Lỗi xóa sản phẩm: ' + error.message, 'error');
+                
+                // Revert optimistic update
+                if (itemElement) {
+                    itemElement.classList.remove('removing');
+                }
             }
         }
 
-        // Lightning-fast clear cart
+        // Clear entire cart
         async function clearCart() {
-            if (!confirm('Xóa tất cả sản phẩm?')) return;
-            
-            try {
-                await hyperApiCall('/cart/clear', { method: 'DELETE' });
-                hyperCache.invalidate();
-                loadCartLightning();
-                showToastLightning('Đã xóa toàn bộ', 'success');
-            } catch (error) {
-                showToastLightning('Lỗi xóa giỏ hàng', 'error');
+            if (!confirm('Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?')) {
+                return;
             }
+
+            try {
+                showCartLoading();
+                
+                const response = await hyperApiCall('/cart/clear', {
+                    method: 'DELETE'
+                });
+
+                if (response.Success || response.success) {
+                    cartData = { Items: [], TotalItems: 0, TotalAmount: 0 };
+                    displayCart(cartData);
+                    updateProgress();
+                    HardcoverUI.NotificationSystem.show('Đã xóa tất cả sản phẩm', 'success');
+                } else {
+                    throw new Error(response.Message || 'Không thể xóa giỏ hàng');
+                }
+            } catch (error) {
+                console.error('Error clearing cart:', error);
+                HardcoverUI.NotificationSystem.show('Lỗi xóa giỏ hàng: ' + error.message, 'error');
+                loadCart(); // Reload on error
+            }
+        }
+
+        // Proceed to checkout
+        function proceedToCheckout() {
+            if (!cartData || !cartData.Items || cartData.Items.length === 0) {
+                HardcoverUI.NotificationSystem.show('Giỏ hàng trống', 'warning');
+                return;
+            }
+
+            // For demo purposes, show a success message
+            HardcoverUI.NotificationSystem.show(
+                `Chuyển đến thanh toán cho ${cartData.TotalItems} sản phẩm (${cartData.TotalAmount.toFixed(2)})`,
+                'info',
+                5000,
+                { title: 'Demo Mode' }
+            );
+            
+            // In a real app, you would redirect to checkout page
+            // window.location.href = '/checkout';
+        }
+
+        // Save for later (demo feature)
+        function saveForLater() {
+            HardcoverUI.NotificationSystem.show('Tính năng "Lưu để mua sau" đang được phát triển', 'info');
         }
 
         // Utility functions
-        function updateUIState(items, amount, hasItems) {
-            document.getElementById('totalItems').textContent = items;
-            document.getElementById('totalAmount').textContent = `${amount.toFixed(2)}`;
-            document.getElementById('checkoutBtn').disabled = !hasItems;
-            document.getElementById('clearBtn').disabled = !hasItems;
+        function enableButtons() {
+            const buttons = document.querySelectorAll('#checkoutBtn, #clearCartBtn, #saveForLaterBtn');
+            buttons.forEach(btn => {
+                if (cartData && cartData.TotalItems > 0) {
+                    btn.disabled = false;
+                }
+            });
         }
 
-        function quickAuthCheck() {
+        function disableButtons() {
+            const buttons = document.querySelectorAll('#checkoutBtn, #clearCartBtn, #saveForLaterBtn');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        // Optimized API call function
+        async function hyperApiCall(endpoint, options = {}) {
             const token = localStorage.getItem('authToken');
-            if (!token || token.split('.').length !== 3) {
-                showNoAuthLightning();
-                return false;
+            if (!token) {
+                throw new Error('Chưa đăng nhập');
             }
-            return true;
-        }
 
-        function showNoAuthLightning() {
-            document.getElementById('cartItems').innerHTML = `
-                <div class="text-center py-4">
-                    <i class="bi bi-person-x display-1 text-warning"></i>
-                    <h4>Chưa đăng nhập</h4>
-                    <a href="/auth/login.html" class="btn btn-primary">Đăng nhập</a>
-                </div>
-            `;
-        }
+            const config = {
+                method: 'GET',
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    ...options.headers
+                }
+            };
 
-        function showErrorLightning(error) {
-            document.getElementById('cartItems').innerHTML = `
-                <div class="text-center py-4">
-                    <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
-                    <h4>Lỗi tải giỏ hàng</h4>
-                    <p class="text-muted">${error.message}</p>
-                    <button onclick="forceReload()" class="btn btn-primary">Thử lại</button>
-                </div>
-            `;
-        }
+            const response = await fetch(`https://localhost:7288/api${endpoint}`, config);
 
-        function handleAuthError() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('currentUser');
-            window.location.href = '/auth/login.html';
-        }
-
-        function forceReload() {
-            hyperCache.invalidate();
-            loadCartLightning();
-        }
-
-        // Ultra-fast toast notifications
-        function showToastLightning(message, type = 'info') {
-            const existing = document.querySelector('.toast-lightning');
-            if (existing) existing.remove();
-            
-            const toast = document.createElement('div');
-            toast.className = `toast-lightning alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
-            toast.style.cssText = 'top: 80px; right: 20px; z-index: 9999; padding: 8px 12px; font-size: 0.9rem;';
-            toast.textContent = message;
-            
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
-        }
-
-        function updatePerfMonitor(loadTime, apiTime, fromCache) {
-            document.getElementById('loadTime').textContent = loadTime;
-            document.getElementById('apiTime').textContent = fromCache ? 'cached' : apiTime;
-        }
-
-        // Other functions
-        function checkout() {
-            const total = document.getElementById('totalAmount').textContent;
-            alert(`Thanh toán ${total}`);
-        }
-
-        function logout() {
-            if (confirm('Đăng xuất?')) {
-                localStorage.clear();
-                window.location.href = '/auth/login.html';
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    window.location.href = '/auth/login.html';
+                    throw new Error('Phiên đăng nhập đã hết hạn');
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+
+            return await response.json();
         }
 
-        // Initialize with maximum speed
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Lightning Cart initialized');
-            
-            // Hide perf monitor in production
-            if (window.location.hostname !== 'localhost') {
-                document.getElementById('perfMonitor').style.display = 'none';
+        // Add animations CSS
+        const animationStyle = document.createElement('style');
+        animationStyle.textContent = `
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
             }
             
-            // Load cart immediately
-            loadCartLightning();
-        });
-
-        // Smart refresh strategies
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && hyperCache.cart && 
-                (Date.now() - hyperCache.cartTimestamp) > hyperCache.TTL) {
-                console.log('👁️ Page visible, cache expired, refreshing');
-                loadCartLightning();
+            .hc-cart-item {
+                animation: fadeIn 0.3s ease-out;
             }
-        });
-
-        // Network change handling
-        window.addEventListener('online', () => {
-            console.log('🌐 Back online');
-            hyperCache.invalidate();
-            loadCartLightning();
-        });
-
-        // Performance optimization
-        window.addEventListener('beforeunload', () => {
-            // Cleanup to prevent memory leaks
-            hyperCache.invalidate();
-        });
-
-        // Debug tools
-        window.lightningDebug = {
-            cache: hyperCache,
-            perf: perfTracker,
-            reload: forceReload,
-            clearCache: () => hyperCache.invalidate(),
-            testSpeed: async () => {
-                hyperCache.invalidate();
-                const start = performance.now();
-                await loadCartLightning();
-                const end = performance.now();
-                console.log(`🔥 Speed test: ${Math.round(end - start)}ms`);
+            
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
-        };
+        `;
+        document.head.appendChild(animationStyle);
 
-        console.log('⚡ Lightning debug: window.lightningDebug');
+        // Global functions
+        window.loadCart = loadCart;
+        window.updateQuantity = updateQuantity;
+        window.removeItem = removeItem;
+        window.clearCart = clearCart;
+        window.proceedToCheckout = proceedToCheckout;
+        window.saveForLater = saveForLater;
     </script>
 </body>
 </html>
