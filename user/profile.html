@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - BookStore</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="http://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="../css/common.css" rel="stylesheet">
 </head>
 <body>
@@ -88,14 +88,14 @@
     //         email: 'admin@test.com',
     //         fullName: 'Test Admin',
     //         role: 'Admin', // Đổi thành 'Customer' nếu test User
-    //         avatarUrl: 'https://via.placeholder.com/40'
+    //         avatarUrl: 'http://via.placeholder.com/40'
     //     }));
     // }
         const user = checkAuth();
         
         // Load profile info
         if (user) {
-            document.getElementById('profileAvatar').src = user.avatarUrl || 'https://via.placeholder.com/150';
+            document.getElementById('profileAvatar').src = user.avatarUrl || 'http://via.placeholder.com/150';
             document.getElementById('profileName').textContent = user.fullName;
             document.getElementById('profileEmail').textContent = user.email;
             document.getElementById('profileRole').textContent = user.role;

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Advisor Chatbot | BookStore</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Hardcover Style CSS -->
+    <link href="../css/hardcover-style.css" rel="stylesheet">
+    <link href="../css/common.css" rel="stylesheet">
+    <link href="../css/user.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --hc-accent: #4f46e5;
+            --hc-accent-hover: #4338ca;
+            --hc-bg-primary: #ffffff;
+            --hc-bg-secondary: #f1f5f9;
+            --hc-text-primary: #1e293b;
+            --hc-text-secondary: #64748b;
+            --hc-border-light: #e2e8f0;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            min-height: 100vh;
+            width: 100vw;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--hc-text-primary);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .hc-header {
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+            padding: 0;
+        }
+
+        .hc-chatbot-container {
+            width: 100vw;
+            height: calc(100vh - 70px);
+            max-width: 100vw;
+            margin: 0;
+            background: var(--hc-bg-primary);
+            border-radius: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 70px);
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hc-chatbot-header {
+            background: linear-gradient(90deg, var(--hc-accent), #7c3aed);
+            color: #fff;
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .hc-chatbot-messages {
+            flex: 1;
+            padding: 2rem 15vw;
+            padding-bottom: 100px;
+            overflow-y: auto;
+            background: var(--hc-bg-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            scroll-behavior: smooth;
+        }
+
+        .hc-chatbot-message {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.8rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .hc-chatbot-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .hc-chatbot-bubble {
+            max-width: 65vw;
+            padding: 1.2rem 1.6rem;
+            border-radius: 20px;
+            font-size: 1.05rem;
+            line-height: 1.5;
+            background: var(--hc-bg-primary);
+            color: var(--hc-text-primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hc-chatbot-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+
+        .hc-chatbot-message.user .hc-chatbot-bubble {
+            background: linear-gradient(90deg, var(--hc-accent), #7c3aed);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+        }
+
+        .hc-chatbot-message.bot .hc-chatbot-bubble {
+            background: var(--hc-bg-primary);
+            color: var(--hc-text-primary);
+            border-bottom-left-radius: 6px;
+        }
+
+        .hc-chatbot-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            transition: transform 0.3s ease;
+        }
+
+        .hc-chatbot-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .hc-chatbot-input-area {
+            position: fixed; /* Fix the input area to the bottom */
+            bottom: 0; /* Align to the bottom of the viewport */
+            left: 0;
+            width: 100%; /* Full width */
+            display: flex;
+            gap: 0.8rem;
+            padding: 1.5rem 15vw;
+            background: var(--hc-bg-primary);
+            border-top: 1px solid var(--hc-border-light);
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+            z-index: 10; /* Ensure input area stays above other content */
+        }
+
+        .hc-chatbot-input {
+            flex: 1;
+            border: 1px solid var(--hc-border-light);
+            border-radius: 12px;
+            padding: 0.9rem 1.2rem;
+            font-size: 1rem;
+            outline: none;
+            background: var(--hc-bg-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .hc-chatbot-input:focus {
+            border-color: var(--hc-accent);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+            background: #fff;
+        }
+
+        .hc-chatbot-send-btn {
+            background: linear-gradient(90deg, var(--hc-accent), #7c3aed);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.9rem 1.3rem;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.3s ease;
+        }
+
+        .hc-chatbot-send-btn:hover {
+            background: linear-gradient(90deg, var(--hc-accent-hover), #6d28d9);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .hc-chatbot-messages, .hc-chatbot-input-area {
+                padding-left: 5vw;
+                padding-right: 5vw;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hc-chatbot-messages {
+                padding-bottom: 80px; /* Adjust for smaller screens if input area is smaller */
+            }
+            .hc-chatbot-input-area {
+                padding: 1.5rem 3vw; /* Match existing mobile padding */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="hc-header">
+        <nav class="hc-nav" style="max-width: 900px; margin: 0 auto;">
+            <a href="/user/index.html" class="hc-logo">
+                <i class="bi bi-book-half"></i>
+                BookStore
+            </a>
+            <span style="font-size: 1.1rem; color: var(--hc-text-secondary); font-weight: 500;">
+                Book Advisor Chatbot
+            </span>
+        </nav>
+    </header>
+    <main>
+        <div class="hc-chatbot-container">  
+            <div class="hc-chatbot-messages" id="chatMessages">
+                <div class="hc-chatbot-message bot">
+                    <span class="hc-chatbot-avatar"><i class="bi bi-robot"></i></span>
+                    <div class="hc-chatbot-bubble">
+                        Xin chào! Tôi là Book Advisor 🤖<br>
+                        Bạn muốn tìm sách gì hôm nay? Hãy mô tả thể loại, chủ đề, tác giả hoặc cảm xúc bạn muốn nhé!
+                    </div>
+                </div>
+            </div>
+            <form class="hc-chatbot-input-area" id="chatForm" autocomplete="off">
+                <input type="text" class="hc-chatbot-input" id="chatInput" placeholder="Nhập câu hỏi về sách..." required>
+                <button type="submit" class="hc-chatbot-send-btn">
+                    <i class="bi bi-send"></i>
+                </button>
+            </form>
+        </div>
+    </main>
+    <script src="../js/chatbot.js"></script>
+    <script>
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const userMsg = chatInput.value.trim();
+            if (!userMsg) return;
+            appendMessage('user', userMsg);
+            chatInput.value = '';
+            chatInput.focus();
+
+            // Hiển thị trạng thái typing
+            appendMessage('bot', '<i class="bi bi-three-dots"></i> Đang tìm sách phù hợp cho bạn...', true);
+
+            // Gọi hàm xử lý trực tiếp từ chatbot.js
+            try {
+                const reply = await window.runRAG(userMsg);
+                // Xóa typing indicator
+                const typing = chatMessages.querySelector('.hc-chatbot-message.bot.typing');
+                if (typing) typing.remove();
+                appendMessage('bot', reply);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (err) {
+                const typing = chatMessages.querySelector('.hc-chatbot-message.bot.typing');
+                if (typing) typing.remove();
+                appendMessage('bot', 'Có lỗi xảy ra khi xử lý câu hỏi.');
+            }
+        });
+
+        function appendMessage(sender, text, typing = false) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `hc-chatbot-message ${sender}` + (typing ? ' typing' : '');
+            msgDiv.innerHTML = `
+                <span class="hc-chatbot-avatar">
+                    <i class="bi ${sender === 'user' ? 'bi-person-circle' : 'bi-robot'}"></i>
+                </span>
+                <div class="hc-chatbot-bubble">${text}</div>
+            `;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>

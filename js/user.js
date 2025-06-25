@@ -21,7 +21,7 @@ function displayUserBooks(result) {
     container.innerHTML = books.map(book => `
         <div class="col-md-3 mb-4">
             <div class="card h-100 book-card" onclick="showBookDetail(${book.Id})">
-                <img src="${book.CoverImg || 'https://via.placeholder.com/200x300'}" 
+                <img src="${book.CoverImg || 'http://via.placeholder.com/200x300'}" 
                      class="card-img-top" style="height: 250px; object-fit: cover;">
                 <div class="card-body">
                     <h6 class="card-title">${book.Title}</h6>
@@ -69,7 +69,7 @@ async function showBookDetail(bookId) {
         document.getElementById('modalBody').innerHTML = `
             <div class="row">
                 <div class="col-md-4">
-                    <img src="${book.CoverImg || 'https://via.placeholder.com/300x400'}" 
+                    <img src="${book.CoverImg || 'http://via.placeholder.com/300x400'}" 
                          class="img-fluid rounded">
                 </div>
                 <div class="col-md-8">
@@ -116,7 +116,7 @@ async function quickAddToCart(bookId) {
         }
 
         // API Configuration
-        const API_BASE = 'https://localhost:7288/api';
+        const API_BASE = 'http://localhost:5209/api';
         
         // Validate bookId
         if (!bookId || isNaN(bookId)) {
@@ -200,7 +200,7 @@ async function quickAddToCart(bookId) {
         
         // Handle different error types
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            showAlert('Không thể kết nối đến server. Kiểm tra backend đang chạy ở https://localhost:7288', 'danger');
+            showAlert('Không thể kết nối đến server. Kiểm tra backend đang chạy ở http://localhost:5209', 'danger');
         } else if (error.message.includes('405')) {
             showAlert('Lỗi 405: API endpoint không hỗ trợ POST method', 'danger');
         } else if (error.message.includes('404')) {
@@ -219,7 +219,7 @@ async function updateCartCount() {
             return;
         }
 
-        const API_BASE = 'https://localhost:7288/api';
+        const API_BASE = 'http://localhost:5209/api';
         
         const response = await fetch(`${API_BASE}/cart/count`, {
             method: 'GET',
@@ -321,7 +321,7 @@ document.getElementById('addToCartBtn')?.addEventListener('click', () => {
 
 // Test cart API endpoints
 async function testCartAPI() {
-    const API_BASE = 'https://localhost:7288/api';
+    const API_BASE = 'http://localhost:5209/api';
     const token = localStorage.getItem('authToken');
     
     console.log('=== Testing Cart API Endpoints ===');
@@ -425,15 +425,15 @@ async function testCartAPI() {
 
 // Test backend connection
 async function testBackendConnection() {
-    const API_BASE = 'https://localhost:7288/api';
+    const API_BASE = 'http://localhost:5209/api';
     
     console.log('=== Testing Backend Connection ===');
     
     const testEndpoints = [
         `${API_BASE}/BookApi/quick-stats`,
         `${API_BASE}/auth/verify`,
-        `https://localhost:7288/`, // Root endpoint
-        `https://localhost:7288/swagger` // Swagger endpoint
+        `http://localhost:5209/`, // Root endpoint
+        `http://localhost:5209/swagger` // Swagger endpoint
     ];
     
     for (const url of testEndpoints) {

@@ -67,7 +67,7 @@ class ProgressiveImageLoader {
             img.classList.add('hc-image-loaded');
         };
         tempImg.onerror = () => {
-            img.src = 'https://via.placeholder.com/200x300?text=No+Image';
+            img.src = 'http://via.placeholder.com/200x300?text=No+Image';
             img.style.filter = 'none';
         };
         tempImg.src = fullSrc;

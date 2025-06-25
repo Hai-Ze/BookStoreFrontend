@@ -1,7 +1,7 @@
 // Common functions with fixed API configuration
 
 // API Configuration - SỬA URL CHO ĐÚNG
-const API_BASE = 'https://localhost:7288/api'; // URL backend
+const API_BASE = 'http://localhost:5209/api'; // URL backend
 
 // Kiểm tra nếu đang ở localhost khác
 if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
@@ -187,7 +187,7 @@ function updateUserInfo() {
         }
         
         if (userAvatarEl) {
-            userAvatarEl.src = user.AvatarUrl || user.avatarUrl || user.picture || 'https://via.placeholder.com/40';
+            userAvatarEl.src = user.AvatarUrl || user.avatarUrl || user.picture || 'http://via.placeholder.com/40';
         }
         
         console.log('Updated user info:', {

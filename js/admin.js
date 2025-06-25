@@ -79,7 +79,7 @@ function displayBooks(result) {
             ${books.map(book => `
                 <div class="col-md-3 mb-3">
                     <div class="card">
-                        <img src="${book.CoverImg || 'https://via.placeholder.com/200x300'}" 
+                        <img src="${book.CoverImg || 'http://via.placeholder.com/200x300'}" 
                              class="card-img-top" style="height: 200px; object-fit: cover;">
                         <div class="card-body">
                             <h6>${book.Title}</h6>
