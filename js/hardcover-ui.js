@@ -713,6 +713,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.themeManager = new ThemeManager();
     window.performanceMonitor = new PerformanceMonitor();
     
+    // Initialize chatbot widget
+    chatbotWidget = new ChatbotWidget();
+    console.log('💬 Chatbot widget initialized');
     // Register main modal
     const bookModal = document.getElementById('bookModal');
     if (bookModal) {
@@ -763,3 +766,192 @@ window.HardcoverUI = {
         smoothScrollTo
     }
 };
+// === CHATBOT WIDGET ===
+class ChatbotWidget {
+    constructor() {
+        this.isOpen = false;
+        this.isTyping = false;
+        this.createWidget();
+        this.setupEventListeners();
+    }
+
+    createWidget() {
+        const widget = document.createElement('div');
+        widget.className = 'hc-chatbot-widget';
+        widget.innerHTML = `
+            <button class="hc-chatbot-toggle" id="chatbotToggle">
+                <i class="bi bi-chat-dots"></i>
+            </button>
+            
+            <div class="hc-chatbot-box" id="chatbotBox">
+                <div class="hc-chatbot-header">
+                    <h4>
+                        <i class="bi bi-robot"></i>
+                        Book Advisor
+                    </h4>
+                    <button class="hc-chatbot-close" id="chatbotClose">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                
+                <div class="hc-chatbot-messages" id="chatbotMessages">
+                    <div class="hc-chat-message bot">
+                        <div class="hc-chat-bubble">
+                            👋 Xin chào! Tôi là Book Advisor. Bạn cần tìm sách gì hôm nay?
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hc-chat-input-area">
+                    <input type="text" 
+                           class="hc-chat-input" 
+                           id="chatbotInput" 
+                           placeholder="Nhập câu hỏi..."
+                           maxlength="500">
+                    <button class="hc-chat-send" id="chatbotSend">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(widget);
+    }
+
+    setupEventListeners() {
+        const toggle = document.getElementById('chatbotToggle');
+        const close = document.getElementById('chatbotClose');
+        const input = document.getElementById('chatbotInput');
+        const send = document.getElementById('chatbotSend');
+        
+        toggle.addEventListener('click', () => this.toggleChatbot());
+        close.addEventListener('click', () => this.closeChatbot());
+        
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        
+        send.addEventListener('click', () => this.sendMessage());
+        
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            const widget = e.target.closest('.hc-chatbot-widget');
+            if (!widget && this.isOpen) {
+                this.closeChatbot();
+            }
+        });
+    }
+
+    toggleChatbot() {
+        const box = document.getElementById('chatbotBox');
+        const toggle = document.getElementById('chatbotToggle');
+        
+        if (this.isOpen) {
+            this.closeChatbot();
+        } else {
+            box.classList.add('show');
+            toggle.innerHTML = '<i class="bi bi-x"></i>';
+            this.isOpen = true;
+            
+            // Focus input
+            setTimeout(() => {
+                document.getElementById('chatbotInput').focus();
+            }, 300);
+        }
+    }
+
+    closeChatbot() {
+        const box = document.getElementById('chatbotBox');
+        const toggle = document.getElementById('chatbotToggle');
+        
+        box.classList.remove('show');
+        toggle.innerHTML = '<i class="bi bi-chat-dots"></i>';
+        this.isOpen = false;
+    }
+
+    async sendMessage() {
+        const input = document.getElementById('chatbotInput');
+        const message = input.value.trim();
+        
+        if (!message || this.isTyping) return;
+        
+        // Add user message
+        this.addMessage(message, 'user');
+        input.value = '';
+        
+        // Show typing indicator
+        this.showTyping();
+        
+        try {
+            // Call chatbot API (nếu có runRAG function)
+            let response;
+            if (typeof window.runRAG === 'function') {
+                response = await window.runRAG(message);
+            } else {
+                response = this.getDefaultResponse(message);
+            }
+            
+            // Remove typing and add bot response
+            this.hideTyping();
+            this.addMessage(response, 'bot');
+        } catch (error) {
+            this.hideTyping();
+            this.addMessage('Xin lỗi, tôi gặp sự cố. Vui lòng thử lại sau.', 'bot');
+        }
+    }
+
+    addMessage(text, sender) {
+        const messages = document.getElementById('chatbotMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `hc-chat-message ${sender}`;
+        messageDiv.innerHTML = `<div class="hc-chat-bubble">${text}</div>`;
+        
+        messages.appendChild(messageDiv);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    showTyping() {
+        this.isTyping = true;
+        const messages = document.getElementById('chatbotMessages');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'hc-chat-message bot typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="hc-chat-bubble">
+                <i class="bi bi-three-dots"></i> Đang soạn tin...
+            </div>
+        `;
+        
+        messages.appendChild(typingDiv);
+        messages.scrollTop = messages.scrollHeight;
+        
+        // Disable send button
+        document.getElementById('chatbotSend').disabled = true;
+    }
+
+    hideTyping() {
+        this.isTyping = false;
+        const typingIndicator = document.querySelector('.typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+        
+        // Enable send button
+        document.getElementById('chatbotSend').disabled = false;
+    }
+
+    getDefaultResponse(message) {
+        const responses = [
+            "Tôi hiểu bạn đang tìm sách. Hãy thử mô tả cụ thể hơn về thể loại hoặc chủ đề bạn quan tâm!",
+            "Bạn có thể thử tìm kiếm bằng tên tác giả hoặc từ khóa trong phần tìm kiếm chính.",
+            "Để được tư vấn chi tiết hơn, hãy truy cập trang Chatbot chuyên dụng của chúng tôi!"
+        ];
+        
+        return responses[Math.floor(Math.random() * responses.length)];
+    }
+}
+
+// Global chatbot widget instance
+let chatbotWidget = null;

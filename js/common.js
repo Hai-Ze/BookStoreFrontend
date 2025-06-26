@@ -172,6 +172,30 @@ function formatDate(dateString) {
     }
 }
 
+function cleanGenres(genres) {
+    if (!genres) return 'Not specified';
+    
+    if (genres.startsWith('[') && genres.endsWith(']')) {
+        try {
+            const parsed = JSON.parse(genres);
+            if (Array.isArray(parsed)) {
+                return parsed.filter(g => g && g.trim()).join(', ');
+            }
+        } catch (e) {
+            // Fallback
+            return genres
+                .slice(1, -1)
+                .replace(/"/g, '')
+                .split(',')
+                .map(g => g.trim())
+                .filter(g => g)
+                .join(', ');
+        }
+    }
+    
+    return genres.trim();
+}
+
 // Update header user info
 function updateUserInfo() {
     const userStr = localStorage.getItem('currentUser');
@@ -275,3 +299,4 @@ window.apiCall = apiCall;
 window.checkAuth = checkAuth;
 window.logout = logout;
 window.updateUserInfo = updateUserInfo;
+window.cleanGenres = cleanGenres;

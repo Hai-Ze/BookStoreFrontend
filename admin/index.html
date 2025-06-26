@@ -623,6 +623,7 @@
                 const stats = await apiCall('/BookApi/quick-stats');
                 
                 // Update statistics
+                document.getElementById('totalUsers').textContent = Math.floor(Math.random() * 100) + 50; // Demo data
                 document.getElementById('totalBooks').textContent = stats.TotalBooks || 0;
                 document.getElementById('topRatedCount').textContent = stats.TopRatedBooks?.length || 0;
                 document.getElementById('newBooks').textContent = stats.RecentBooks?.length || 0;

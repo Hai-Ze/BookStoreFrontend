@@ -121,7 +121,9 @@
             box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
         }
         
+        /* Custom User Menu with Hover */
         .hc-user-menu {
+            position: relative;
             display: flex;
             align-items: center;
             gap: var(--hc-space-sm);
@@ -129,6 +131,7 @@
             padding: var(--hc-space-sm);
             border-radius: 50px;
             transition: var(--hc-transition);
+            cursor: pointer;
         }
         
         .hc-user-menu:hover {
@@ -142,6 +145,88 @@
             border-radius: 50%;
             border: 2px solid var(--hc-border-light);
             transition: var(--hc-transition);
+        }
+        
+        .hc-user-name {
+            font-weight: 600;
+            color: var(--hc-text-primary);
+            margin-right: var(--hc-space-xs);
+        }
+        
+        .hc-dropdown-arrow {
+            color: var(--hc-text-secondary);
+            font-size: 0.8rem;
+            transition: var(--hc-transition);
+        }
+        
+        .hc-user-menu:hover .hc-dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        
+        /* Dropdown Menu Styles */
+        .hc-dropdown-menu {
+            position: absolute;
+            top: 120%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--hc-border-light);
+            padding: var(--hc-space-sm);
+            min-width: 200px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+        
+        .hc-user-menu:hover .hc-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        /* Triangle arrow pointing up */
+        .hc-dropdown-menu::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid white;
+        }
+        
+        .hc-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: var(--hc-space-sm);
+            padding: var(--hc-space-sm) var(--hc-space-md);
+            border-radius: 8px;
+            color: var(--hc-text-primary);
+            text-decoration: none;
+            transition: var(--hc-transition);
+            font-size: 0.95rem;
+        }
+        
+        .hc-dropdown-item:hover {
+            background: var(--hc-bg-secondary);
+            color: var(--hc-text-primary);
+            transform: translateX(2px);
+        }
+        
+        .hc-dropdown-divider {
+            height: 1px;
+            background: var(--hc-border-light);
+            margin: var(--hc-space-sm) 0;
+        }
+        
+        .hc-dropdown-item.logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--hc-danger);
         }
         
         .hc-hero {
@@ -480,6 +565,13 @@
             .hc-filter-controls {
                 justify-content: center;
             }
+            
+            /* Mobile dropdown adjustments */
+            .hc-dropdown-menu {
+                right: 0;
+                left: auto;
+                min-width: 180px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -523,30 +615,31 @@
                     <span class="hc-cart-count" id="cartCount">0</span>
                 </a>
                 
+                <!-- Custom User Menu with Hover -->
                 <div class="hc-user-menu">
                     <img id="userAvatar" src="" class="hc-avatar" alt="User Avatar">
-                    <div class="dropdown">
-                        <button class="hc-btn hc-btn-ghost dropdown-toggle" 
-                                type="button" 
-                                data-bs-toggle="dropdown"
-                                style="border: none; background: none; padding: var(--hc-space-sm);">
-                            <span id="userName" style="font-weight: 600;">User</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/user/profile.html">
-                                <i class="bi bi-person"></i> Profile
-                            </a></li>
-                            <li><a class="dropdown-item" href="/user/orders.html">
-                                <i class="bi bi-bag"></i> My Orders
-                            </a></li>
-                            <li><a class="dropdown-item" href="/user/wishlist.html">
-                                <i class="bi bi-heart"></i> Wishlist
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" onclick="logout()">
-                                <i class="bi bi-box-arrow-right"></i> Sign Out
-                            </a></li>
-                        </ul>
+                    <span class="hc-user-name" id="userName">User</span>
+                    <i class="bi bi-chevron-down hc-dropdown-arrow"></i>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="hc-dropdown-menu">
+                        <a href="/user/profile.html" class="hc-dropdown-item">
+                            <i class="bi bi-person"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a href="/user/orders.html" class="hc-dropdown-item">
+                            <i class="bi bi-bag"></i>
+                            <span>My Orders</span>
+                        </a>
+                        <a href="/user/wishlist.html" class="hc-dropdown-item">
+                            <i class="bi bi-heart"></i>
+                            <span>Wishlist</span>
+                        </a>
+                        <div class="hc-dropdown-divider"></div>
+                        <a href="#" class="hc-dropdown-item logout" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Sign Out</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -770,7 +863,7 @@
                     <div class="hc-book-info">
                         <h3 class="hc-book-title">${book.Title}</h3>
                         <p class="hc-book-author">by ${book.Author}</p>
-                        <p class="hc-book-price">$${book.Price.toFixed(2)}</p>
+                        <p class="hc-book-price">${book.Price.toFixed(2)}</p>
                         <div class="hc-book-actions">
                             <button class="hc-btn-add-cart" 
                                     onclick="event.stopPropagation(); quickAddToCart(${book.Id})"
@@ -1271,34 +1364,6 @@
                 transform: translateX(100%);
                 opacity: 0;
             }
-        }
-
-        /* Dropdown styling */
-        .dropdown-menu {
-            border: 1px solid var(--hc-border-light);
-            border-radius: 12px;
-            box-shadow: var(--hc-shadow-lg);
-            padding: var(--hc-space-sm);
-            margin-top: var(--hc-space-sm);
-        }
-
-        .dropdown-item {
-            border-radius: 8px;
-            padding: var(--hc-space-sm) var(--hc-space-md);
-            display: flex;
-            align-items: center;
-            gap: var(--hc-space-sm);
-            transition: var(--hc-transition);
-        }
-
-        .dropdown-item:hover {
-            background: var(--hc-bg-secondary);
-            color: var(--hc-text-primary);
-        }
-
-        .dropdown-divider {
-            margin: var(--hc-space-sm) 0;
-            border-color: var(--hc-border-light);
         }
     </style>
 </body>
