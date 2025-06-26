@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý giỏ hàng - Admin</title>
+    <link href="http://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="http://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../css/hardcover-style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="hc-header">
+        <nav class="hc-nav">
+            <a href="/admin/index.html" class="hc-logo">
+                <i class="bi bi-shield-check"></i> BookStore Admin
+            </a>
+            <div class="hc-nav-actions">
+                <span id="userName">Admin</span>
+                <button class="hc-btn hc-btn-secondary" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="hc-main">
+        <!-- Page Title -->
+        <div style="margin-bottom: var(--hc-space-xl);">
+            <h1><i class="bi bi-cart3"></i> Quản lý giỏ hàng</h1>
+            <p style="color: var(--hc-text-secondary);">Xem và quản lý giỏ hàng của tất cả người dùng</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-people display-4 text-primary"></i>
+                        <h3 id="totalUsers">0</h3>
+                        <p class="text-muted">Users có giỏ hàng</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-cart display-4 text-success"></i>
+                        <h3 id="totalItems">0</h3>
+                        <p class="text-muted">Tổng items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-currency-dollar display-4 text-warning"></i>
+                        <h3 id="totalValue">$0</h3>
+                        <p class="text-muted">Tổng giá trị</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <button class="btn btn-danger" onclick="clearAllCarts()">
+                            <i class="bi bi-trash"></i> Clear All
+                        </button>
+                        <p class="text-muted mt-2">Xóa tất cả giỏ hàng</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cart Items Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-list"></i> Chi tiết giỏ hàng</h5>
+                <button class="btn btn-primary btn-sm" onclick="loadCartData()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>User ID</th>
+                                <th>Sách</th>
+                                <th>Tác giả</th>
+                                <th>Giá</th>
+                                <th>Số lượng</th>
+                                <th>Tổng</th>
+                                <th>Ngày thêm</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="../js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check admin auth
+            if (!checkStrictAdminAuth()) return;
+            updateUserInfo();
+            loadCartData();
+        });
+
+        function checkStrictAdminAuth() {
+            const userStr = localStorage.getItem('currentUser');
+            const token = localStorage.getItem('authToken');
+            
+            if (!userStr || !token) {
+                window.location.href = '/auth/login.html';
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userStr);
+                const adminEmails = ['taodalat123@gmail.com', 'hoanghaizs73@gmail.com'];
+                const userEmail = (user.email || user.Email || '').toLowerCase();
+                const userRole = user.role || user.Role || '';
+                
+                if (!adminEmails.includes(userEmail) || userRole !== 'Admin') {
+                    alert('Chỉ admin mới có quyền truy cập!');
+                    window.location.href = '/user/index.html';
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                window.location.href = '/auth/login.html';
+                return false;
+            }
+        }
+
+        async function loadCartData() {
+            try {
+                // Gọi API để lấy tất cả cart items (cần tạo endpoint mới)
+                const response = await apiCall('/admin/cart/all');
+                displayCartData(response);
+                updateStats(response);
+            } catch (error) {
+                console.error('Error loading cart data:', error);
+                showAlert('Lỗi tải dữ liệu giỏ hàng: ' + error.message, 'danger');
+            }
+        }
+
+        function displayCartData(data) {
+            const tbody = document.getElementById('cartTableBody');
+            
+            if (!data.items || data.items.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">
+                            <i class="bi bi-cart-x display-1"></i>
+                            <br>Không có dữ liệu giỏ hàng
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.items.map(item => `
+                <tr>
+                    <td><span class="badge bg-secondary">${item.userId.substring(0, 8)}...</span></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${item.bookCoverImg || 'http://via.placeholder.com/40'}" 
+                                 width="40" height="60" class="me-2">
+                            <strong>${item.bookTitle}</strong>
+                        </div>
+                    </td>
+                    <td>${item.bookAuthor}</td>
+                    <td><span class="text-success">$${item.bookPrice.toFixed(2)}</span></td>
+                    <td><span class="badge bg-primary">${item.quantity}</span></td>
+                    <td><strong class="text-success">$${item.totalPrice.toFixed(2)}</strong></td>
+                    <td>${new Date(item.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="removeCartItem(${item.id})"
+                                title="Xóa item">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalUsers').textContent = data.totalUsers || 0;
+            document.getElementById('totalItems').textContent = data.totalItems || 0;
+            document.getElementById('totalValue').textContent = `$${(data.totalValue || 0).toFixed(2)}`;
+        }
+
+        async function removeCartItem(itemId) {
+            if (!confirm('Xác nhận xóa item này khỏi giỏ hàng?')) return;
+
+            try {
+                await apiCall(`/admin/cart/remove/${itemId}`, { method: 'DELETE' });
+                showAlert('Đã xóa item thành công!', 'success');
+                loadCartData();
+            } catch (error) {
+                showAlert('Lỗi xóa item: ' + error.message, 'danger');
+            }
+        }
+
+        async function clearAllCarts() {
+            if (!confirm('XÁC NHẬN XÓA TẤT CẢ GIỎ HÀNG?\nHành động này không thể hoàn tác!')) return;
+
+            try {
+                await apiCall('/admin/cart/clear-all', { method: 'DELETE' });
+                showAlert('Đã xóa tất cả giỏ hàng!', 'success');
+                loadCartData();
+            } catch (error) {
+                showAlert('Lỗi xóa tất cả: ' + error.message, 'danger');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/auth/login.html';
+        }
+    </script>
+</body>
+</html>
