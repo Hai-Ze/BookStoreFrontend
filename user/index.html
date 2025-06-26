@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookStore - Discover Amazing Books</title>
+    <title>Cửa hàng sách - Khám phá những cuốn sách tuyệt vời</title>
     
     <!-- Bootstrap Icons -->
     <link href="http://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
@@ -596,7 +596,7 @@
         <nav class="hc-nav">
             <a href="/user/index.html" class="hc-logo">
                 <i class="bi bi-book-half"></i>
-                BookStore
+                Cửa hàng sách
             </a>
             
             <div class="hc-nav-search">
@@ -604,7 +604,7 @@
                     <i class="bi bi-search hc-search-icon"></i>
                     <input type="search" 
                            class="hc-search-input" 
-                           placeholder="Search books, authors, genres..." 
+                           placeholder="Tìm kiếm sách, tác giả, thể loại..." 
                            id="searchInput">
                 </div>
             </div>
@@ -617,28 +617,28 @@
                 
                 <!-- Custom User Menu with Hover -->
                 <div class="hc-user-menu">
-                    <img id="userAvatar" src="" class="hc-avatar" alt="User Avatar">
-                    <span class="hc-user-name" id="userName">User</span>
+                    <img id="userAvatar" src="" class="hc-avatar" alt="Ảnh đại diện người dùng">
+                    <span class="hc-user-name" id="userName">Người dùng</span>
                     <i class="bi bi-chevron-down hc-dropdown-arrow"></i>
                     
                     <!-- Dropdown Menu -->
                     <div class="hc-dropdown-menu">
                         <a href="/user/profile.html" class="hc-dropdown-item">
                             <i class="bi bi-person"></i>
-                            <span>Profile</span>
+                            <span>Hồ sơ</span>
                         </a>
                         <a href="/user/orders.html" class="hc-dropdown-item">
                             <i class="bi bi-bag"></i>
-                            <span>My Orders</span>
+                            <span>Đơn hàng của tôi</span>
                         </a>
                         <a href="/user/wishlist.html" class="hc-dropdown-item">
                             <i class="bi bi-heart"></i>
-                            <span>Wishlist</span>
+                            <span>Danh sách yêu thích</span>
                         </a>
                         <div class="hc-dropdown-divider"></div>
                         <a href="#" class="hc-dropdown-item logout" onclick="logout()">
                             <i class="bi bi-box-arrow-right"></i>
-                            <span>Sign Out</span>
+                            <span>Đăng xuất</span>
                         </a>
                     </div>
                 </div>
@@ -651,18 +651,18 @@
         <!-- Hero Section -->
         <section class="hc-hero hc-fade-in">
             <div class="hc-hero-content">
-                <h1 class="hc-hero-title">Discover Your Next Great Read</h1>
+                <h1 class="hc-hero-title">Khám phá cuốn sách tuyệt vời tiếp theo của bạn</h1>
                 <p class="hc-hero-subtitle">
-                    Explore thousands of books, connect with fellow readers, and track your reading journey
+                    Khám phá hàng ngàn cuốn sách, kết nối với những người yêu sách và theo dõi hành trình đọc sách của bạn
                 </p>
                 <div class="hc-hero-cta">
                     <button class="hc-btn hc-btn-primary hc-btn-lg" onclick="focusSearch()">
                         <i class="bi bi-search"></i>
-                        Start Exploring
+                        Bắt đầu khám phá
                     </button>
                     <a href="/user/chatbot.html" class="hc-btn hc-btn-secondary hc-btn-lg">
                         <i class="bi bi-chat-dots"></i>
-                        Book Advisor
+                        Tư vấn sách
                     </a>
                 </div>
             </div>
@@ -673,24 +673,24 @@
             <div class="hc-filter-header">
                 <h2 class="hc-filter-title">
                     <i class="bi bi-funnel"></i>
-                    Browse Books
+                    Duyệt sách
                 </h2>
                 
                 <div class="hc-filter-controls">
                     <div class="hc-filter-group">
-                        <label for="sortBy" style="font-weight: 600; color: var(--hc-text-secondary);">Sort by:</label>
+                        <label for="sortBy" style="font-weight: 600; color: var(--hc-text-secondary);">Sắp xếp theo:</label>
                         <select class="hc-filter-select" id="sortBy">
-                            <option value="newest">Newest First</option>
-                            <option value="price-low">Price: Low to High</option>
-                            <option value="price-high">Price: High to Low</option>
-                            <option value="rating">Highest Rated</option>
-                            <option value="popular">Most Popular</option>
+                            <option value="newest">Mới nhất</option>
+                            <option value="price-low">Giá: Thấp đến cao</option>
+                            <option value="price-high">Giá: Cao đến thấp</option>
+                            <option value="rating">Đánh giá cao nhất</option>
+                            <option value="popular">Phổ biến nhất</option>
                         </select>
                     </div>
                     
                     <div class="hc-stats-badge" id="bookStats">
                         <i class="bi bi-book"></i>
-                        <span id="totalBooks">Loading...</span>
+                        <span id="totalBooks">Đang tải...</span>
                     </div>
                 </div>
             </div>
@@ -698,14 +698,14 @@
 
         <!-- Books Section -->
         <section class="hc-books-section">
-            <h2 class="hc-section-title">Featured Books</h2>
+            <h2 class="hc-section-title">Sách nổi bật</h2>
             
             <div id="booksContainer" class="hc-books-grid">
                 <!-- Loading state -->
                 <div class="hc-loading">
                     <div class="hc-spinner"></div>
                     <p style="margin-top: var(--hc-space-md); color: var(--hc-text-secondary);">
-                        Loading amazing books for you...
+                        Đang tải những cuốn sách tuyệt vời cho bạn...
                     </p>
                 </div>
             </div>
@@ -721,7 +721,7 @@
     <div class="hc-modal-overlay hc-hidden" id="bookModal">
         <div class="hc-modal">
             <div class="hc-modal-header">
-                <h3 id="modalTitle">Book Details</h3>
+                <h3 id="modalTitle">Chi tiết sách</h3>
                 <button class="hc-btn hc-btn-icon hc-btn-secondary" onclick="closeModal()">
                     <i class="bi bi-x"></i>
                 </button>
@@ -731,10 +731,10 @@
             </div>
             <div class="hc-modal-footer">
                 <button class="hc-btn hc-btn-primary" id="addToCartBtn">
-                    <i class="bi bi-cart-plus"></i> Add to Cart
+                    <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
                 </button>
                 <button class="hc-btn hc-btn-secondary" onclick="closeModal()">
-                    <i class="bi bi-x"></i> Close
+                    <i class="bi bi-x"></i> Đóng
                 </button>
             </div>
         </div>
@@ -754,7 +754,7 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📚 BookStore initialized');
+            console.log('📚 Cửa hàng sách đã khởi tạo');
             
             // Check authentication
             checkAuth();
@@ -830,8 +830,8 @@
                 displayUserBooks(result);
                 updateStats(result);
             } catch (error) {
-                showError('Failed to load books: ' + error.message);
-                console.error('Error loading books:', error);
+                showError('Không thể tải sách: ' + error.message);
+                console.error('Lỗi tải sách:', error);
             }
         }
 
@@ -843,10 +843,10 @@
                 container.innerHTML = `
                     <div class="hc-error">
                         <i class="bi bi-book"></i>
-                        <h3>No Books Found</h3>
-                        <p>Try adjusting your search or check back later for new arrivals</p>
+                        <h3>Không tìm thấy sách</h3>
+                        <p>Hãy thử điều chỉnh tìm kiếm hoặc kiểm tra lại sau để xem sách mới</p>
                         <button class="hc-btn hc-btn-primary" onclick="loadUserBooks(1)">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                            <i class="bi bi-arrow-clockwise"></i> Làm mới
                         </button>
                     </div>
                 `;
@@ -856,24 +856,24 @@
             container.innerHTML = books.map(book => `
                 <div class="hc-book-card hc-fade-in" onclick="showBookDetail(${book.Id})">
                     <div class="hc-book-cover">
-                        <img src="${book.CoverImg || 'http://via.placeholder.com/220x330?text=No+Cover'}" 
+                        <img src="${book.CoverImg || 'http://via.placeholder.com/220x330?text=Không+Có+Bìa'}" 
                              alt="${book.Title}"
                              loading="lazy">
                     </div>
                     <div class="hc-book-info">
                         <h3 class="hc-book-title">${book.Title}</h3>
-                        <p class="hc-book-author">by ${book.Author}</p>
+                        <p class="hc-book-author">bởi ${book.Author}</p>
                         <p class="hc-book-price">${book.Price.toFixed(2)}</p>
                         <div class="hc-book-actions">
                             <button class="hc-btn-add-cart" 
                                     onclick="event.stopPropagation(); quickAddToCart(${book.Id})"
-                                    title="Add to cart">
+                                    title="Thêm vào giỏ hàng">
                                 <i class="bi bi-cart-plus"></i>
-                                Add to Cart
+                                Thêm vào giỏ hàng
                             </button>
                             <button class="hc-btn-view-details" 
                                     onclick="event.stopPropagation(); showBookDetail(${book.Id})"
-                                    title="View details">
+                                    title="Xem chi tiết">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
@@ -898,7 +898,7 @@
             if (currentPage > 1) {
                 html += `
                     <button class="hc-btn hc-btn-secondary" onclick="loadUserBooks(${currentPage - 1})">
-                        <i class="bi bi-chevron-left"></i> Previous
+                        <i class="bi bi-chevron-left"></i> Trước
                     </button>
                 `;
             }
@@ -933,7 +933,7 @@
             if (currentPage < totalPages) {
                 html += `
                     <button class="hc-btn hc-btn-secondary" onclick="loadUserBooks(${currentPage + 1})">
-                        Next <i class="bi bi-chevron-right"></i>
+                        Tiếp theo <i class="bi bi-chevron-right"></i>
                     </button>
                 `;
             }
@@ -945,7 +945,7 @@
         function updateStats(result) {
             const statsElement = document.getElementById('totalBooks');
             const count = result.TotalBooks || 0;
-            statsElement.textContent = `${count.toLocaleString()} books`;
+            statsElement.textContent = `${count.toLocaleString()} cuốn sách`;
         }
 
         function showLoading() {
@@ -953,7 +953,7 @@
                 <div class="hc-loading">
                     <div class="hc-spinner"></div>
                     <p style="margin-top: var(--hc-space-md); color: var(--hc-text-secondary);">
-                        Loading amazing books for you...
+                        Đang tải những cuốn sách tuyệt vời cho bạn...
                     </p>
                 </div>
             `;
@@ -963,10 +963,10 @@
             document.getElementById('booksContainer').innerHTML = `
                 <div class="hc-error">
                     <i class="bi bi-exclamation-triangle" style="color: var(--hc-danger);"></i>
-                    <h3>Oops! Something went wrong</h3>
+                    <h3>Ôi! Có lỗi xảy ra</h3>
                     <p>${message}</p>
                     <button class="hc-btn hc-btn-primary" onclick="loadUserBooks(currentPage)">
-                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                        <i class="bi bi-arrow-clockwise"></i> Thử lại
                     </button>
                 </div>
             `;
@@ -986,7 +986,7 @@
                 <div class="hc-loading">
                     <div class="hc-spinner"></div>
                     <p style="margin-top: var(--hc-space-md); color: var(--hc-text-secondary);">
-                        Loading book details...
+                        Đang tải chi tiết sách...
                     </p>
                 </div>
             `;
@@ -995,7 +995,7 @@
                 const book = await apiCall(`/BookApi/${bookId}/details`);
                 
                 // Clean genres
-                let cleanGenres = book.Genres || 'Not specified';
+                let cleanGenres = book.Genres || 'Không xác định';
                 if (cleanGenres.startsWith('[') && cleanGenres.endsWith(']')) {
                     cleanGenres = cleanGenres.slice(1, -1).replace(/"/g, '');
                 }
@@ -1013,7 +1013,7 @@
                             "1": ratings["1"] || 0
                         };
                     } catch (e) {
-                        console.warn('Invalid RatingsByStars format:', e);
+                        console.warn('Định dạng RatingsByStars không hợp lệ:', e);
                     }
                 }
 
@@ -1021,7 +1021,7 @@
                 document.getElementById('modalTitle').textContent = book.Title;
                 modalBody.innerHTML = `
                     <div class="hc-book-detail">
-                        <img src="${book.CoverImg || 'http://via.placeholder.com/300x450?text=No+Cover'}" 
+                        <img src="${book.CoverImg || 'http://via.placeholder.com/300x450?text=Không+Có+Bìa'}" 
                              alt="${book.Title}" 
                              class="hc-book-detail-cover">
                         
@@ -1031,43 +1031,43 @@
                             <div class="hc-book-meta">
                                 <div class="hc-book-meta-item">
                                     <i class="bi bi-person-fill"></i>
-                                    <span><strong>Author:</strong> ${book.Author}</span>
+                                    <span><strong>Tác giả:</strong> ${book.Author}</span>
                                 </div>
                                 <div class="hc-book-meta-item">
                                     <i class="bi bi-currency-dollar"></i>
-                                    <span><strong>Price:</strong> ${book.Price?.toFixed(2) || '0.00'}</span>
+                                    <span><strong>Giá:</strong> ${book.Price?.toFixed(2) || '0.00'}</span>
                                 </div>
                                 <div class="hc-book-meta-item">
                                     <i class="bi bi-tags-fill"></i>
-                                    <span><strong>Genres:</strong> ${cleanGenres}</span>
+                                    <span><strong>Thể loại:</strong> ${cleanGenres}</span>
                                 </div>
                                 ${book.Pages ? `
                                 <div class="hc-book-meta-item">
                                     <i class="bi bi-file-text"></i>
-                                    <span><strong>Pages:</strong> ${book.Pages}</span>
+                                    <span><strong>Số trang:</strong> ${book.Pages}</span>
                                 </div>
                                 ` : ''}
                                 ${book.Language ? `
                                 <div class="hc-book-meta-item">
                                     <i class="bi bi-translate"></i>
-                                    <span><strong>Language:</strong> ${book.Language}</span>
+                                    <span><strong>Ngôn ngữ:</strong> ${book.Language}</span>
                                 </div>
                                 ` : ''}
                                 ${book.Series ? `
                                 <div class="hc-book-meta-item">
                                     <i class="bi bi-collection"></i>
-                                    <span><strong>Series:</strong> ${book.Series}</span>
+                                    <span><strong>Sê-ri:</strong> ${book.Series}</span>
                                 </div>
                                 ` : ''}
                             </div>
 
                             <div class="hc-book-description">
-                                <h4>Description</h4>
-                                <p>${book.Description || 'No description available.'}</p>
+                                <h4>Mô tả</h4>
+                                <p>${book.Description || 'Không có mô tả.'}</p>
                             </div>
 
                             <div style="margin-bottom: var(--hc-space-lg);">
-                                <h4>Reader Ratings</h4>
+                                <h4>Đánh giá của độc giả</h4>
                                 <canvas id="ratingChart" style="width: 300px; height: 200px; margin: var(--hc-space-md) 0;"></canvas>
                             </div>
                         </div>
@@ -1083,10 +1083,10 @@
                 modalBody.innerHTML = `
                     <div class="hc-error">
                         <i class="bi bi-exclamation-triangle" style="color: var(--hc-danger);"></i>
-                        <h4>Failed to load book details</h4>
+                        <h4>Không thể tải chi tiết sách</h4>
                         <p>${error.message}</p>
                         <button class="hc-btn hc-btn-primary" onclick="showBookDetail(${bookId})">
-                            <i class="bi bi-arrow-clockwise"></i> Try Again
+                            <i class="bi bi-arrow-clockwise"></i> Thử lại
                         </button>
                     </div>
                 `;
@@ -1100,9 +1100,9 @@
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['5 stars', '4 stars', '3 stars', '2 stars', '1 star'],
+                    labels: ['5 sao', '4 sao', '3 sao', '2 sao', '1 sao'],
                     datasets: [{
-                        label: 'Number of ratings',
+                        label: 'Số lượng đánh giá',
                         data: [ratingData["5"], ratingData["4"], ratingData["3"], ratingData["2"], ratingData["1"]],
                         backgroundColor: [
                             '#10B981',
@@ -1154,7 +1154,7 @@
                 displayUserBooks(result);
                 updateStats(result);
             } catch (error) {
-                showError('Search failed: ' + error.message);
+                showError('Tìm kiếm thất bại: ' + error.message);
             }
         }
 
@@ -1164,35 +1164,35 @@
                 const button = event?.target?.closest('button');
                 if (button) {
                     button.disabled = true;
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Adding...';
+                    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang thêm...';
                 }
 
                 const result = await addToCartOptimized(bookId);
                 
                 if (result.success) {
-                    showToast('Added to cart successfully!', 'success');
+                    showToast('Đã thêm vào giỏ hàng thành công!', 'success');
                     updateCartCount();
                     
                     // Visual feedback
                     if (button) {
-                        button.innerHTML = '<i class="bi bi-check-circle"></i> Added!';
+                        button.innerHTML = '<i class="bi bi-check-circle"></i> Đã thêm!';
                         button.style.background = 'var(--hc-success)';
                         setTimeout(() => {
-                            button.innerHTML = '<i class="bi bi-cart-plus"></i> Add to Cart';
+                            button.innerHTML = '<i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng';
                             button.style.background = 'var(--hc-accent)';
                             button.disabled = false;
                         }, 2000);
                     }
                 } else {
-                    throw new Error(result.message || 'Failed to add to cart');
+                    throw new Error(result.message || 'Không thể thêm vào giỏ hàng');
                 }
             } catch (error) {
-                console.error('Error adding to cart:', error);
-                showToast('Error: ' + error.message, 'error');
+                console.error('Lỗi thêm vào giỏ hàng:', error);
+                showToast('Lỗi: ' + error.message, 'error');
                 
                 // Reset button
                 if (button) {
-                    button.innerHTML = '<i class="bi bi-cart-plus"></i> Add to Cart';
+                    button.innerHTML = '<i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng';
                     button.disabled = false;
                 }
             }
@@ -1202,11 +1202,11 @@
         async function addToCartOptimized(bookId) {
             const token = localStorage.getItem('authToken');
             if (!token) {
-                showToast('Please sign in to add items to cart', 'warning');
+                showToast('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng', 'warning');
                 setTimeout(() => {
                     window.location.href = '/auth/login.html';
                 }, 2000);
-                return { success: false, message: 'Not authenticated' };
+                return { success: false, message: 'Chưa đăng nhập' };
             }
 
             try {
@@ -1227,11 +1227,11 @@
                     if (response.status === 401) {
                         localStorage.removeItem('authToken');
                         localStorage.removeItem('currentUser');
-                        showToast('Session expired. Please sign in again.', 'warning');
+                        showToast('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.', 'warning');
                         setTimeout(() => {
                             window.location.href = '/auth/login.html';
                         }, 2000);
-                        return { success: false, message: 'Session expired' };
+                        return { success: false, message: 'Phiên đăng nhập hết hạn' };
                     }
                     throw new Error(`HTTP ${response.status}`);
                 }
@@ -1242,7 +1242,7 @@
                     message: result.Message || result.message
                 };
             } catch (error) {
-                console.error('Add to cart error:', error);
+                console.error('Lỗi thêm vào giỏ hàng:', error);
                 return {
                     success: false,
                     message: error.message
@@ -1275,7 +1275,7 @@
                     document.getElementById('cartCount').textContent = '0';
                 }
             } catch (error) {
-                console.error('Error updating cart count:', error);
+                console.error('Lỗi cập nhật số lượng giỏ hàng:', error);
                 document.getElementById('cartCount').textContent = '0';
             }
         }
